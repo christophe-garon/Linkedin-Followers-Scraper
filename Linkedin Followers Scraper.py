@@ -22,8 +22,8 @@ browser = webdriver.Chrome('chromedriver')
 
 
 #Replace with you username and password
-username = "topgaron@gmail.com"
-password = "garon2395"
+username = "username"
+password = "password"
 
 #Open login page
 browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
