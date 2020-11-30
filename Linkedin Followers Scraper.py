@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[429]:
+# In[478]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -22,8 +22,8 @@ browser = webdriver.Chrome('chromedriver')
 
 
 #Replace with you username and password
-username = "username"
-password = "password"
+username = "topgaron@gmail.com"
+password = "garon2395"
 
 #Open login page
 browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
@@ -41,7 +41,7 @@ elementID.submit()
 browser.get('https://www.linkedin.com/company/rei/')
 
 
-# In[430]:
+# In[479]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -49,13 +49,13 @@ likers.click()
 time.sleep(3)
 
 
-# In[438]:
+# In[480]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
 def est_age():
 
-    #browser.switch_to.window(browser.window_handles[1])
+    browser.switch_to.window(browser.window_handles[1])
     date = datetime.today()
     current_year = date.strftime("%Y")
     school_start_year = "9999"
@@ -72,9 +72,10 @@ def est_age():
 
         for d in grad_year:
             year = d.find('time').text.strip().replace(' ', '')
-            s_start_year = re.sub(r'[a-zA-Z]', r'', year)
-            if s_start_year < school_start_year:
-                        school_start_year = s_start_year
+            start_year = re.sub(r'[a-zA-Z]', r'', year)
+            start_year = start_year[0:4]
+            if start_year < school_start_year:
+                        school_start_year = start_year
     except:
         pass
 
@@ -92,8 +93,9 @@ def est_age():
 
         for d in work_start:
             start_date = d.find('span',class_=None)
-            start_date = start_date.text.strip()
-            start_year = start_date[4:8]
+            start_date = start_date.text.strip().replace(' ', '')
+            start_date = re.sub(r'[a-zA-Z]', r'', start_date)
+            start_year = start_date[0:4]
             if start_year < work_start_year:
                     work_start_year = start_year
     except:
