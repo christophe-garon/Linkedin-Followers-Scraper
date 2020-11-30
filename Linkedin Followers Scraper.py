@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[352]:
+# In[429]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -41,7 +41,7 @@ elementID.submit()
 browser.get('https://www.linkedin.com/company/rei/')
 
 
-# In[353]:
+# In[430]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -49,7 +49,7 @@ likers.click()
 time.sleep(3)
 
 
-# In[354]:
+# In[438]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -58,60 +58,67 @@ def est_age():
     #browser.switch_to.window(browser.window_handles[1])
     date = datetime.today()
     current_year = date.strftime("%Y")
-    school_start_year = current_year
-    work_start_year = current_year
-    
+    school_start_year = "9999"
+    work_start_year = "9999"
+
     #Get page source
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
     user_profile.prettify()
-    
+
     #Look for earliest university start date
     try:
         grad_year = user_profile.findAll('p',{"class":"pv-entity__dates t-14 t-black--light t-normal"})
-        
+
         for d in grad_year:
             year = d.find('time').text.strip().replace(' ', '')
-            year = re.sub(r'[a-zA-Z]', r'', year)
-            if year < school_start_year:
-                school_start_year = year
-        
+            s_start_year = re.sub(r'[a-zA-Z]', r'', year)
+            if s_start_year < school_start_year:
+                        school_start_year = s_start_year
+    except:
+        pass
+
+    #Look for earlies work date
+    try:
+        #Click see more if it's there
+        try:
+            browser.find_element_by_xpath("//button[@class='pv-profile-section__see-more-inline pv-profile-section__text-truncate-toggle link-without-visited-state']").click()
+        except:
+            time.sleep(1)
+            pass
+
+        work_start = user_profile.findAll('h4', {"class":"pv-entity__date-range t-14 t-black--light t-normal"})
+
+
+        for d in work_start:
+            start_date = d.find('span',class_=None)
+            start_date = start_date.text.strip()
+            start_year = start_date[4:8]
+            if start_year < work_start_year:
+                    work_start_year = start_year
+    except:
+        pass
+
+
+    # Compare work and school start dates to avoid adult degress
+    if school_start_year < work_start_year:
         #Estimate age based on avg university start age of 18
         est_birth_year = int(school_start_year) - 18
         est_age = int(current_year) - est_birth_year
-        
-    except:
-        
-        #If no university start date, get earlier work date 
-        try:       
-            try:
-                browser.find_element_by_xpath("//button[@class='pv-profile-section__see-more-inline pv-profile-section__text-truncate-toggle link-without-visited-state']").click()
-            except:
-                time.sleep(2)
-                pass
-        
-            work_start = user_profile.findAll('h4', {"class":"pv-entity__date-range t-14 t-black--light t-normal"})
 
-            for d in work_start:
-                start_date = d.find('span',class_=None)
-                start_date = start_date.text.strip()
-                start_year = start_date[4:8]
-                if start_year < work_start_year:
-                    work_start_year = start_year
-            
-            #Estimate age based on avg post college work start date of 22
-            est_birth_year = int(work_start_year) - 22
-            est_age = int(current_year) - est_birth_year
-                               
-        except:
-            est_age = "unknown"
-            
+    else:
+        #Estimate age based on avg post college work start date of 22
+        est_birth_year = int(work_start_year) - 22
+        est_age = int(current_year) - est_birth_year
+
+    if est_age == -7961 or est_age == -7957:
+        est_age = 'unknown'
+    
     return est_age
-
         
 
 
-# In[355]:
+# In[425]:
 
 
 #Lists of the data we will collect
@@ -159,16 +166,9 @@ def get_user_data():
             user_bios.append('No Bio')
             pass
     
-#     try:
-#         #Get estimated age using our age function
-#         est_age = est_age()
-#         print(est_age)
-#         est_ages.append(est_age)
-#     except:
-#         est_ages.append('unknown')
 
 
-# In[356]:
+# In[426]:
 
 
 def scroll():
@@ -192,7 +192,7 @@ def scroll():
         last_height = new_height
 
 
-# In[357]:
+# In[427]:
 
 
 def export_df():
@@ -218,7 +218,7 @@ def export_df():
     writer.save()
 
 
-# In[359]:
+# In[428]:
 
 
 # liker_page = browser.page_source
@@ -265,10 +265,4 @@ while i != 0:
         export_df()
     else:
         time.sleep(1)
-
-
-# In[ ]:
-
-
-
 
