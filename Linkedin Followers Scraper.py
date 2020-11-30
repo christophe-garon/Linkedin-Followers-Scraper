@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[257]:
+# In[352]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -41,7 +41,7 @@ elementID.submit()
 browser.get('https://www.linkedin.com/company/rei/')
 
 
-# In[258]:
+# In[353]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -49,13 +49,13 @@ likers.click()
 time.sleep(3)
 
 
-# In[ ]:
+# In[354]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
 def est_age():
 
-    browser.switch_to.window(browser.window_handles[1])
+    #browser.switch_to.window(browser.window_handles[1])
     date = datetime.today()
     current_year = date.strftime("%Y")
     school_start_year = current_year
@@ -111,7 +111,7 @@ def est_age():
         
 
 
-# In[261]:
+# In[355]:
 
 
 #Lists of the data we will collect
@@ -124,7 +124,7 @@ est_ages = []
 
 #Function that Scrapes user data
 def get_user_data():
-    browser.switch_to.window(browser.window_handles[1])
+    #browser.switch_to.window(browser.window_handles[1])
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
     user_profile.prettify()
@@ -168,31 +168,31 @@ def get_user_data():
 #         est_ages.append('unknown')
 
 
-# In[262]:
+# In[356]:
 
 
-# def scroll():
-#     #Simulate scrolling to capture all posts
-#     SCROLL_PAUSE_TIME = 1.5
+def scroll():
+    #Simulate scrolling to capture all posts
+    SCROLL_PAUSE_TIME = 1.5
 
-#     # Get scroll height
-#     last_height = browser.execute_script("return document.body.scrollHeight")
+    # Get scroll height
+    last_height = browser.execute_script("return document.body.scrollHeight")
 
-#     while True:
-#         # Scroll down to bottom
-#         browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    while True:
+        # Scroll down to bottom
+        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-#         # Wait to load page
-#         time.sleep(SCROLL_PAUSE_TIME)
+        # Wait to load page
+        time.sleep(SCROLL_PAUSE_TIME)
 
-#         # Calculate new scroll height and compare with last scroll height
-#         new_height = browser.execute_script("return document.body.scrollHeight")
-#         if new_height == last_height:
-#             break
-#         last_height = new_height
+        # Calculate new scroll height and compare with last scroll height
+        new_height = browser.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
 
 
-# In[ ]:
+# In[357]:
 
 
 def export_df():
@@ -218,67 +218,53 @@ def export_df():
     writer.save()
 
 
-# In[263]:
+# In[359]:
 
 
-#Iterate through the list of users who engaged with post and collect their info
+# liker_page = browser.page_source
+# liker_page = bs(liker_page.encode("utf-8"), "html")
+# print(len(liker_page.findAll("li", {"class":"artdeco-list__item"})))
+
 
 i=1
 
 while i != 0:
+    
+    path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+    user_page = browser.find_element_by_xpath(path)
+    user_page.click()
+
+    time.sleep(3)
+
+    # Switch to the new window and open URL B
+    
     try:
+        browser.switch_to.window(browser.window_handles[1])
+    except:
+        print("Failed to switch")
+        scroll()
         path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
         user_page = browser.find_element_by_xpath(path)
         user_page.click()
-        time.sleep(2)
-
-        # Switch to the new window and open URL B
-        browser.switch_to.window(browser.window_handles[1])
-        print(i)
-        
-#         scroll()
-        time.sleep(1)
-        get_user_data()
-
-        # Close the tab with URL B
-        browser.close()
-        # Switch back to the first tab with URL A
-        browser.switch_to.window(browser.window_handles[0])
-
-        #Iterate save progress if multiple of 10
-        i+=1
-        if i % 10 == 0:
-            export_df()
-        else:
-            time.sleep(1)
-
-    except:
-        i=0
-
-
-# In[242]:
-
-
-# #Constructing Pandas Dataframe
-# data = {
-#     "Name": liker_names,
-#     "Location": liker_locations,
-#     "Age": est_ages,
-#     "Headline": liker_headlines,
-#     "Bio": user_bios
+        browser.switch_to.window(browser.window_handles[1]) 
+        pass
     
-# }
+    print(i)
 
-# df = pd.DataFrame(data)
+    time.sleep(1)
+    get_user_data()
 
+    # Close the tab with URL B
+    browser.close()
+    # Switch back to the first tab with URL A
+    browser.switch_to.window(browser.window_handles[0])
 
-# #Exporting csv to program folder
-# df.to_csv("linkedin_page_followers.csv", encoding='utf-8', index=False)
-
-# #Export to Excel
-# writer = pd.ExcelWriter("linkedin_page_followers.xlsx", engine='xlsxwriter')
-# df.to_excel(writer, index =False)
-# writer.save()
+    #Iterate save progress if multiple of 10
+    i+=1
+    if i % 10 == 0:
+        export_df()
+    else:
+        time.sleep(1)
 
 
 # In[ ]:
