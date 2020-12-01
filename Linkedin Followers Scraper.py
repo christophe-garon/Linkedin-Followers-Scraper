@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[558]:
+# In[631]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -44,7 +44,7 @@ browser.get('https://www.linkedin.com/company/rei/')
 time.sleep(2)
 
 
-# In[483]:
+# In[632]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -52,7 +52,7 @@ likers.click()
 time.sleep(2)
 
 
-# In[548]:
+# In[657]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -130,7 +130,7 @@ def est_age():
         
 
 
-# In[485]:
+# In[710]:
 
 
 #Lists of the data we will collect
@@ -159,24 +159,31 @@ def get_user_data():
     headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
     liker_headlines.append(headline.text.strip())
     
-    #Get estimated age using our age function
-    age = est_age()
-    est_ages.append(age)
 
-    
     #Get Liker Bio
     try:
-        browser.find_element_by_class_name("lt-line-clamp__more").click()
-        bio = user_profile.find("span",{"class":"lt-line-clamp__raw-line"})
-        user_bios.append(bio.text.strip())
+        browser.find_element_by_xpath("//a[@id='line-clamp-show-more-button']").click()
+        time.sleep(1)
+        user_profile = browser.page_source
+        user_profile = bs(user_profile.encode("utf-8"), "html")
+        bio = user_profile.findAll("span",{"class":"lt-line-clamp__raw-line"})
+        user_bios.append(bio[0].text.strip())
     except:
         try:
-            bio = user_profile.find('p',{"class":"pv-about__summary-text mt4 t-14 ember-view"})
-            user_bios.append(bio.text.strip())
+            bio_lines = []
+            bios = user_profile.findAll('span',{"class":"lt-line-clamp__line"})
+            for b in bios:
+                bio_lines.append(b.text.strip())
+            bio = ",".join(bio_lines).replace(",", ". ")
+            user_bios.append(bio)
+            
         except:
             user_bios.append('No Bio')
             pass
     
+    #Get estimated age using our age function
+    age = est_age()
+    est_ages.append(age)
 
 
 # In[504]:
@@ -243,7 +250,6 @@ while i != 0:
     time.sleep(3)
 
     # Switch to the new window and open URL B
-    
     try:
         browser.switch_to.window(browser.window_handles[1])
     except:
@@ -270,6 +276,33 @@ while i != 0:
         print(i)
     else:
         time.sleep(1)
+
+
+# In[ ]:
+
+
+# #Dealing with auto logout
+# login()
+# get_liker_page()
+# i = 100
+
+# try:
+    
+#     path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+#     user_page = browser.find_element_by_xpath(path)
+#     user_page.click()
+#     time.sleep(3)
+#     browser.switch_to.window(browser.window_handles[1])
+
+# except:
+#     print("One sec, I need to scroll")
+#     scroll()
+#     path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+#     user_page = browser.find_element_by_xpath(path)
+#     user_page.click()
+#     time.sleep(3)
+#     browser.switch_to.window(browser.window_handles[1])
+    
 
 
 # In[ ]:
