@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[478]:
+# In[558]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -15,15 +15,17 @@ import time
 from datetime import datetime
 import pandas as pd
 import re
+import caffeine
 
+caffeine.on(display=True)
 
 #accessing Chromedriver
 browser = webdriver.Chrome('chromedriver')
 
 
 #Replace with you username and password
-username = "topgaron@gmail.com"
-password = "garon2395"
+username = "username"
+password = "password"
 
 #Open login page
 browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
@@ -39,17 +41,18 @@ elementID.submit()
 
 #Go to company webpage
 browser.get('https://www.linkedin.com/company/rei/')
+time.sleep(2)
 
 
-# In[479]:
+# In[483]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
 likers.click()
-time.sleep(3)
+time.sleep(2)
 
 
-# In[480]:
+# In[548]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -64,12 +67,19 @@ def est_age():
     #Get page source
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
-    user_profile.prettify()
+
 
     #Look for earliest university start date
     try:
         grad_year = user_profile.findAll('p',{"class":"pv-entity__dates t-14 t-black--light t-normal"})
-
+        
+        if grad_year == []:
+            browser.execute_script("window.scrollTo(0, 1000);")
+            user_profile = browser.page_source
+            user_profile = bs(user_profile.encode("utf-8"), "html")
+            grad_year = user_profile.findAll('p',{"class":"pv-entity__dates t-14 t-black--light t-normal"})
+            
+        
         for d in grad_year:
             year = d.find('time').text.strip().replace(' ', '')
             start_year = re.sub(r'[a-zA-Z]', r'', year)
@@ -78,6 +88,7 @@ def est_age():
                         school_start_year = start_year
     except:
         pass
+    
 
     #Look for earlies work date
     try:
@@ -101,7 +112,6 @@ def est_age():
     except:
         pass
 
-
     # Compare work and school start dates to avoid adult degress
     if school_start_year < work_start_year:
         #Estimate age based on avg university start age of 18
@@ -120,7 +130,7 @@ def est_age():
         
 
 
-# In[425]:
+# In[485]:
 
 
 #Lists of the data we will collect
@@ -133,10 +143,9 @@ est_ages = []
 
 #Function that Scrapes user data
 def get_user_data():
-    #browser.switch_to.window(browser.window_handles[1])
+    browser.switch_to.window(browser.window_handles[1])
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
-    user_profile.prettify()
     
     #Get Liker Name
     name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
@@ -170,7 +179,7 @@ def get_user_data():
     
 
 
-# In[426]:
+# In[504]:
 
 
 def scroll():
@@ -223,11 +232,6 @@ def export_df():
 # In[428]:
 
 
-# liker_page = browser.page_source
-# liker_page = bs(liker_page.encode("utf-8"), "html")
-# print(len(liker_page.findAll("li", {"class":"artdeco-list__item"})))
-
-
 i=1
 
 while i != 0:
@@ -243,7 +247,7 @@ while i != 0:
     try:
         browser.switch_to.window(browser.window_handles[1])
     except:
-        print("Failed to switch")
+        print("One sec, I need to scroll")
         scroll()
         path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
         user_page = browser.find_element_by_xpath(path)
@@ -251,8 +255,6 @@ while i != 0:
         browser.switch_to.window(browser.window_handles[1]) 
         pass
     
-    print(i)
-
     time.sleep(1)
     get_user_data()
 
@@ -265,6 +267,13 @@ while i != 0:
     i+=1
     if i % 10 == 0:
         export_df()
+        print(i)
     else:
         time.sleep(1)
+
+
+# In[ ]:
+
+
+
 
