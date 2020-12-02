@@ -16,6 +16,8 @@ from datetime import datetime
 import pandas as pd
 import re
 import caffeine
+import random
+import schedule
 
 caffeine.on(display=True)
 
@@ -221,7 +223,6 @@ def export_df():
         "Age": est_ages,
         "Headline": liker_headlines,
         "Bio": user_bios
-
     }
 
     df = pd.DataFrame(data)
@@ -236,6 +237,14 @@ def export_df():
     writer.save()
 
 
+# In[ ]:
+
+
+def current_time():
+    current_time = datetime.now().strftime("%H:%M")
+    return current_time
+
+
 # In[428]:
 
 
@@ -243,11 +252,13 @@ i=1
 
 while i != 0:
     
+    time.sleep(random.randint(3,15))
+    
     path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
     user_page = browser.find_element_by_xpath(path)
     user_page.click()
 
-    time.sleep(3)
+    time.sleep(random.randint(1,3))
 
     # Switch to the new window and open URL B
     try:
@@ -261,7 +272,7 @@ while i != 0:
         browser.switch_to.window(browser.window_handles[1]) 
         pass
     
-    time.sleep(1)
+    time.sleep(random.randint(2,5))
     get_user_data()
 
     # Close the tab with URL B
@@ -274,35 +285,15 @@ while i != 0:
     if i % 10 == 0:
         export_df()
         print(i)
+        time.sleep(random.randint(20,1200))
+       
+        #Stop for the night
+        while current_time() < "07:05":
+            schedule.run_pending()
+            time.sleep(60)
+            
     else:
         time.sleep(1)
-
-
-# In[ ]:
-
-
-# #Dealing with auto logout
-# login()
-# get_liker_page()
-# i = 100
-
-# try:
-    
-#     path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-#     user_page = browser.find_element_by_xpath(path)
-#     user_page.click()
-#     time.sleep(3)
-#     browser.switch_to.window(browser.window_handles[1])
-
-# except:
-#     print("One sec, I need to scroll")
-#     scroll()
-#     path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-#     user_page = browser.find_element_by_xpath(path)
-#     user_page.click()
-#     time.sleep(3)
-#     browser.switch_to.window(browser.window_handles[1])
-    
 
 
 # In[ ]:
