@@ -250,7 +250,7 @@ def current_time():
 
 i=1
 
-while i != 0:
+while True:
     
     time.sleep(random.randint(3,15))
     
