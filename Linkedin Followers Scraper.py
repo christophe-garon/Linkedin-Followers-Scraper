@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[631]:
+# In[726]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -46,7 +46,7 @@ browser.get('https://www.linkedin.com/company/rei/')
 time.sleep(2)
 
 
-# In[632]:
+# In[727]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -54,7 +54,7 @@ likers.click()
 time.sleep(2)
 
 
-# In[657]:
+# In[728]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -132,7 +132,7 @@ def est_age():
         
 
 
-# In[710]:
+# In[729]:
 
 
 #Lists of the data we will collect
@@ -188,31 +188,32 @@ def get_user_data():
     est_ages.append(age)
 
 
-# In[504]:
+# In[730]:
 
 
-def scroll():
-    #Simulate scrolling to capture all posts
-    SCROLL_PAUSE_TIME = 1.5
+##Scrolls the main page
+# def scroll():
+#     #Simulate scrolling to capture all posts
+#     SCROLL_PAUSE_TIME = 1.5
 
-    # Get scroll height
-    last_height = browser.execute_script("return document.body.scrollHeight")
+#     # Get scroll height
+#     last_height = browser.execute_script("return document.body.scrollHeight")
 
-    while True:
-        # Scroll down to bottom
-        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+#     while True:
+#         # Scroll down to bottom
+#         browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-        # Wait to load page
-        time.sleep(SCROLL_PAUSE_TIME)
+#         # Wait to load page
+#         time.sleep(SCROLL_PAUSE_TIME)
 
-        # Calculate new scroll height and compare with last scroll height
-        new_height = browser.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
-        last_height = new_height
+#         # Calculate new scroll height and compare with last scroll height
+#         new_height = browser.execute_script("return document.body.scrollHeight")
+#         if new_height == last_height:
+#             break
+#         last_height = new_height
 
 
-# In[427]:
+# In[731]:
 
 
 def export_df():
@@ -237,7 +238,7 @@ def export_df():
     writer.save()
 
 
-# In[ ]:
+# In[734]:
 
 
 def current_time():
@@ -245,10 +246,17 @@ def current_time():
     return current_time
 
 
-# In[428]:
-
-
+#Liker link number we will iterate to the path
 i=1
+#Scoll length we will iterate
+l=500
+#The path of the block that we need to select to scroll
+block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
+
+
+# In[735]:
+
+
 
 while True:
     
@@ -260,12 +268,14 @@ while True:
 
     time.sleep(random.randint(1,3))
 
-    # Switch to the new window and open URL B
+    # Switch to the new window and scroll and retry if it wasn't found
     try:
         browser.switch_to.window(browser.window_handles[1])
     except:
         print("One sec, I need to scroll")
-        scroll()
+        browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
+        time.sleep(2)
+        l += 500
         path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
         user_page = browser.find_element_by_xpath(path)
         user_page.click()
@@ -285,6 +295,8 @@ while True:
     if i % 10 == 0:
         export_df()
         print(i)
+        
+        #Random long sleep function to prevent linkedin rate limit
         time.sleep(random.randint(20,1200))
        
         #Stop for the night
