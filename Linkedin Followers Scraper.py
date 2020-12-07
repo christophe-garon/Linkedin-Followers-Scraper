@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[726]:
+# In[862]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -46,7 +46,7 @@ browser.get('https://www.linkedin.com/company/rei/')
 time.sleep(2)
 
 
-# In[727]:
+# In[863]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -54,7 +54,59 @@ likers.click()
 time.sleep(2)
 
 
-# In[728]:
+# In[ ]:
+
+
+#Scrolls the main page
+def scroll():
+    #Simulate scrolling to capture all posts
+    SCROLL_PAUSE_TIME = 1.5
+
+    # Get scroll height
+    last_height = browser.execute_script("return document.body.scrollHeight")
+
+    while True:
+        # Scroll down to bottom
+        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+        # Wait to load page
+        time.sleep(SCROLL_PAUSE_TIME)
+
+        # Calculate new scroll height and compare with last scroll height
+        new_height = browser.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+
+# In[977]:
+
+
+#Scrolls popups
+def scroll_popup(class_name):
+    #Simulate scrolling to capture all posts
+    SCROLL_PAUSE_TIME = 1.5
+
+    # Get scroll height
+    js_code = "return document.getElementsByClassName('{}')[0].scrollHeight".format(class_name)
+    last_height = browser.execute_script(js_code)
+
+    while True:
+        # Scroll down to bottom
+        path = "//div[@class='{}']".format(class_name)
+        browser.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", browser.find_element_by_xpath(path))
+
+        # Wait to load page
+        time.sleep(SCROLL_PAUSE_TIME)
+
+        # Calculate new scroll height and compare with last scroll height
+        new_height = browser.execute_script(js_code)
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+
+# In[738]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -132,7 +184,7 @@ def est_age():
         
 
 
-# In[729]:
+# In[887]:
 
 
 #Lists of the data we will collect
@@ -141,7 +193,8 @@ liker_locations = []
 liker_headlines = []
 user_bios = []
 est_ages = []
-
+influencers = []
+companies = []
 
 #Function that Scrapes user data
 def get_user_data():
@@ -188,29 +241,196 @@ def get_user_data():
     est_ages.append(age)
 
 
-# In[730]:
+# In[980]:
 
 
-##Scrolls the main page
-# def scroll():
-#     #Simulate scrolling to capture all posts
-#     SCROLL_PAUSE_TIME = 1.5
+#Lists of the data we will collect
+liker_names = []
+liker_locations = []
+liker_headlines = []
+user_bios = []
+est_ages = []
+influencers = []
+companies = []
 
-#     # Get scroll height
-#     last_height = browser.execute_script("return document.body.scrollHeight")
+#Function that Scrapes user data
+def get_user_data():
+    browser.switch_to.window(browser.window_handles[1])
+    user_profile = browser.page_source
+    user_profile = bs(user_profile.encode("utf-8"), "html")
+    
+    #Get Liker Name
+    name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
+    liker_names.append(name.text.strip())
+    
+    #Get Liker Location
+    location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
+    liker_locations.append(location.text.strip())
+    
+    #Get Liker Headline
+    headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
+    liker_headlines.append(headline.text.strip())
+    
 
-#     while True:
-#         # Scroll down to bottom
-#         browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    #Get Liker Bio
+    try:
+        browser.find_element_by_xpath("//a[@id='line-clamp-show-more-button']").click()
+        time.sleep(1)
+        user_profile = browser.page_source
+        user_profile = bs(user_profile.encode("utf-8"), "html")
+        bio = user_profile.findAll("span",{"class":"lt-line-clamp__raw-line"})
+        user_bios.append(bio[0].text.strip())
+    except:
+        try:
+            bio_lines = []
+            bios = user_profile.findAll('span',{"class":"lt-line-clamp__line"})
+            for b in bios:
+                bio_lines.append(b.text.strip())
+            bio = ",".join(bio_lines).replace(",", ". ")
+            user_bios.append(bio)
+            
+        except:
+            user_bios.append('No Bio')
+            pass
+    
+    #Get estimated age using our age function
+    age = est_age()
+    est_ages.append(age)
+    
+    
+    #Click see more on user interests
+    try: 
+        interest_path = "//a[@data-control-name='view_interest_details']"
+        browser.find_element_by_xpath(interest_path).click()
+    except:
+        scroll()
+        time.sleep(1)
+        try:
+            interest_path = "//a[@data-control-name='view_interest_details']"
+            browser.find_element_by_xpath(interest_path).click()
+        except:
+            #append no interests to lists
+            pass
+    
+    time.sleep(1)
+    
+    #Scrape the influencers the user follows
+    try:
+        influencer_path = "//a[@id='pv-interests-modal__following-influencers']"
+        browser.find_element_by_xpath(influencer_path).click()
+        
+        #Scroll the end of list
+        class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
+        #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
+        scroll_popup(class_name)
+        
+        influencer_page = browser.page_source
+        influencer_page = bs(influencer_page.encode("utf-8"), "html")
+        influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
+        
+        user_influencers = []
+        for i in influencer_list:
+            name = i.find("span",{"class":"pv-entity__summary-title-text"})
+            user_influencers.append(name.text.strip())
+               
+        influencers.append(user_influencers)
+        
+    except:
+        influencers.append("No Influencers")
 
-#         # Wait to load page
-#         time.sleep(SCROLL_PAUSE_TIME)
 
-#         # Calculate new scroll height and compare with last scroll height
-#         new_height = browser.execute_script("return document.body.scrollHeight")
-#         if new_height == last_height:
-#             break
-#         last_height = new_height
+    
+    #Scrape the companies the user follows
+    try:
+        company_path = "//a[@id='pv-interests-modal__following-companies']"
+        browser.find_element_by_xpath(company_path).click()
+        
+        time.sleep(2)
+        
+        #Scroll the end of list
+        class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
+        #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
+        scroll_popup(class_name)
+        
+    
+        company_page = browser.page_source
+        company_page = bs(company_page.encode("utf-8"), "html")
+        company_list = company_page.findAll("li",{"class":"entity-list-item"})
+        
+        user_companies = []
+        for i in company_list:
+            name = i.find("span",{"class":"pv-entity__summary-title-text"})
+            user_companies.append(name.text.strip())
+               
+        companies.append(user_companies)
+        
+    except:
+        companies.append("No Companies")
+        
+
+
+# In[883]:
+
+
+# companies = []
+
+# #Scrape the companies the user follows
+#     try:
+#         company_path = "//a[@id='pv-interests-modal__following-companies']"
+#         browser.find_element_by_xpath(company_path).click()
+        
+#         time.sleep(2)
+        
+#         #Scroll the end of list
+#         class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
+#         #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
+#         scroll_popup(class_name)
+        
+    
+#         company_page = browser.page_source
+#         company_page = bs(company_page.encode("utf-8"), "html")
+#         company_list = company_page.findAll("li",{"class":"entity-list-item"})
+        
+#         user_companies = []
+#         for i in company_list:
+#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
+#             user_companies.append(name.text.strip())
+               
+#         companies.append(user_companies)
+        
+#     except:
+#         companies.append("No Companies")
+
+
+# In[885]:
+
+
+# influencers = []
+
+# #Scrape the influencers the user follows
+#     try:
+#         influencer_path = "//a[@id='pv-interests-modal__following-influencers']"
+#         browser.find_element_by_xpath(influencer_path).click()
+        
+#         #Scroll the end of list
+#         class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
+#         #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
+#         scroll_popup(class_name)
+        
+#         influencer_page = browser.page_source
+#         influencer_page = bs(influencer_page.encode("utf-8"), "html")
+#         influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
+        
+#         user_influencers = []
+#         for i in influencer_list:
+#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
+#             user_influencers.append(name.text.strip())
+               
+#         influencers.append(user_influencers)
+        
+#     except:
+#         influencers.append("No Influencers")
+        
 
 
 # In[731]:
