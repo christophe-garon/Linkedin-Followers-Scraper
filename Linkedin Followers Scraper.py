@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[862]:
+# In[1047]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -18,6 +18,12 @@ import re
 import caffeine
 import random
 import schedule
+import gender_guesser.detector as gender
+d = gender.Detector()
+import collections
+import matplotlib.pyplot as plt
+get_ipython().run_line_magic('matplotlib', 'inline')
+
 
 caffeine.on(display=True)
 
@@ -46,7 +52,7 @@ browser.get('https://www.linkedin.com/company/rei/')
 time.sleep(2)
 
 
-# In[863]:
+# In[1048]:
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -54,7 +60,7 @@ likers.click()
 time.sleep(2)
 
 
-# In[ ]:
+# In[1049]:
 
 
 #Scrolls the main page
@@ -79,7 +85,7 @@ def scroll():
         last_height = new_height
 
 
-# In[977]:
+# In[1050]:
 
 
 #Scrolls popups
@@ -106,7 +112,7 @@ def scroll_popup(class_name):
         last_height = new_height
 
 
-# In[738]:
+# In[1051]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -184,11 +190,12 @@ def est_age():
         
 
 
-# In[887]:
+# In[1089]:
 
 
 #Lists of the data we will collect
-liker_names = []
+#liker_names = []
+user_gender = []
 liker_locations = []
 liker_headlines = []
 user_bios = []
@@ -202,66 +209,11 @@ def get_user_data():
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
     
-    #Get Liker Name
+    #Get Liker Gender
     name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
-    liker_names.append(name.text.strip())
-    
-    #Get Liker Location
-    location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
-    liker_locations.append(location.text.strip())
-    
-    #Get Liker Headline
-    headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
-    liker_headlines.append(headline.text.strip())
-    
-
-    #Get Liker Bio
-    try:
-        browser.find_element_by_xpath("//a[@id='line-clamp-show-more-button']").click()
-        time.sleep(1)
-        user_profile = browser.page_source
-        user_profile = bs(user_profile.encode("utf-8"), "html")
-        bio = user_profile.findAll("span",{"class":"lt-line-clamp__raw-line"})
-        user_bios.append(bio[0].text.strip())
-    except:
-        try:
-            bio_lines = []
-            bios = user_profile.findAll('span',{"class":"lt-line-clamp__line"})
-            for b in bios:
-                bio_lines.append(b.text.strip())
-            bio = ",".join(bio_lines).replace(",", ". ")
-            user_bios.append(bio)
-            
-        except:
-            user_bios.append('No Bio')
-            pass
-    
-    #Get estimated age using our age function
-    age = est_age()
-    est_ages.append(age)
-
-
-# In[980]:
-
-
-#Lists of the data we will collect
-liker_names = []
-liker_locations = []
-liker_headlines = []
-user_bios = []
-est_ages = []
-influencers = []
-companies = []
-
-#Function that Scrapes user data
-def get_user_data():
-    browser.switch_to.window(browser.window_handles[1])
-    user_profile = browser.page_source
-    user_profile = bs(user_profile.encode("utf-8"), "html")
-    
-    #Get Liker Name
-    name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
-    liker_names.append(name.text.strip())
+    name = name.text.strip().split(" ", 2)
+    user_gender.append(d.get_gender(name[0]))
+    #liker_names.append(name.text.strip())
     
     #Get Liker Location
     location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
@@ -328,15 +280,23 @@ def get_user_data():
         influencer_page = bs(influencer_page.encode("utf-8"), "html")
         influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
         
-        user_influencers = []
+#         user_influencers = []
+#         for i in influencer_list:
+#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
+#             user_influencers.append(name.text.strip())
+               
+#         influencers.append(user_influencers)
+
+        user_influencers = ""
         for i in influencer_list:
             name = i.find("span",{"class":"pv-entity__summary-title-text"})
-            user_influencers.append(name.text.strip())
+            user_influencers += name.text.strip() + ", "
                
         influencers.append(user_influencers)
         
+        
     except:
-        influencers.append("No Influencers")
+        influencers.append("No Influencers ")
 
 
     
@@ -357,19 +317,75 @@ def get_user_data():
         company_page = bs(company_page.encode("utf-8"), "html")
         company_list = company_page.findAll("li",{"class":"entity-list-item"})
         
-        user_companies = []
+#         user_companies = []
+#         for i in company_list:
+#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
+#             user_companies.append(name.text.strip())
+               
+#         companies.append(user_companies)
+
+
+        user_companies = ""
         for i in company_list:
             name = i.find("span",{"class":"pv-entity__summary-title-text"})
-            user_companies.append(name.text.strip())
+            user_companies += name.text.strip() + ", "
                
         companies.append(user_companies)
         
     except:
-        companies.append("No Companies")
+        companies.append("No Companies ")
         
 
 
-# In[883]:
+# In[1128]:
+
+
+def word_counter(words):
+    wordcount = {}
+    for word in words.lower().split(', '):
+        word = word.replace(",","")
+        word = word.replace(":","")
+        word = word.replace("\"","")
+        word = word.replace("!","")
+        word = word.replace("â€œ","")
+        word = word.replace("â€˜","")
+        word = word.replace("*","")
+        word = word.replace("?","")
+        word = word.replace("no companies","")
+        word = word.replace("no influencers","")
+        word = word.replace("(", "").replace(")","")
+        
+        
+        if word not in wordcount:
+            wordcount[word] = 1
+        else:
+            wordcount[word] += 1
+            
+    return wordcount
+
+
+# In[1129]:
+
+
+def get_df(wc):
+    word_counter = collections.Counter(wc).most_common(5)
+    word_count = pd.DataFrame(word_counter, columns = ['Word', 'Count'])
+    return word_count
+
+
+# In[1132]:
+
+
+company_list = ",".join(companies)
+company_count = word_counter(company_list)
+common_companies = get_df(company_count)
+
+influencer_list = ",".join(influencers)
+influencer_count = word_counter(influencer_list)
+common_influencers = get_df(influencer_count)
+
+
+# In[1053]:
 
 
 # companies = []
@@ -402,7 +418,7 @@ def get_user_data():
 #         companies.append("No Companies")
 
 
-# In[885]:
+# In[1054]:
 
 
 # influencers = []
@@ -433,17 +449,19 @@ def get_user_data():
         
 
 
-# In[731]:
+# In[1059]:
 
 
 def export_df():
     #Constructing Pandas Dataframe
     data = {
-        "Name": liker_names,
+        "Gender": user_gender,
         "Location": liker_locations,
         "Age": est_ages,
         "Headline": liker_headlines,
-        "Bio": user_bios
+        "Bio": user_bios,
+        "Followed Influencers": influencers,
+        "Followed Companies": companies
     }
 
     df = pd.DataFrame(data)
@@ -458,7 +476,13 @@ def export_df():
     writer.save()
 
 
-# In[734]:
+# In[1060]:
+
+
+export_df()
+
+
+# In[1056]:
 
 
 def current_time():
@@ -474,7 +498,7 @@ l=500
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[735]:
+# In[1046]:
 
 
 
