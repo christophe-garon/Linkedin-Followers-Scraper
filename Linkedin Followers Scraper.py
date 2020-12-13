@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1555]:
+# In[1584]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -22,18 +22,33 @@ import gender_guesser.detector as gender
 d = gender.Detector()
 import collections
 import matplotlib.pyplot as plt
+import openpyxl
+from openpyxl import load_workbook
 get_ipython().run_line_magic('matplotlib', 'inline')
-
-
 caffeine.on(display=True)
+
+
+#Check for username/password txt file
+try:
+    f= open("credentials.txt","r")
+    contents = f.read()
+    username = contents.replace(":",",").split(",")[1]
+    password = contents.replace(":",",").split(",")[3]
+    page = contents.replace(":",",").split(",")[5]
+except:
+    f= open("credentials.txt","w+")
+    username = input('Enter your linkedin username: ')
+    password = input('Enter your linkedin password: ')
+    page = input("What is url of the page you want to scrape? ")
+    f.write("username:{}, password:{}, page:{}".format(username,password,page))
+    f.close()
+
+
+# In[ ]:
+
 
 #accessing Chromedriver
 browser = webdriver.Chrome('chromedriver')
-
-
-#Replace with you username and password
-username = "username"
-password = "password"
 
 #Open login page
 browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
@@ -46,14 +61,9 @@ elementID = browser.find_element_by_id('password')
 elementID.send_keys(password)
 elementID.submit()
 
-company_page = 'https://www.linkedin.com/company/rei/'
 #Go to company webpage
-browser.get(company_page + 'posts/')
+browser.get(page + 'posts/')
 time.sleep(2)
-
-
-# In[1556]:
-
 
 
 likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
@@ -281,12 +291,6 @@ def get_user_data():
         influencer_page = bs(influencer_page.encode("utf-8"), "html")
         influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
         
-#         user_influencers = []
-#         for i in influencer_list:
-#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
-#             user_influencers.append(name.text.strip())
-               
-#         influencers.append(user_influencers)
 
         user_influencers = ""
         for i in influencer_list:
@@ -297,7 +301,7 @@ def get_user_data():
         
         
     except:
-        influencers.append("No Influencers ")
+        influencers.append("No Influencers^ ")
 
 
     
@@ -318,13 +322,6 @@ def get_user_data():
         company_page = bs(company_page.encode("utf-8"), "html")
         company_list = company_page.findAll("li",{"class":"entity-list-item"})
         
-#         user_companies = []
-#         for i in company_list:
-#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
-#             user_companies.append(name.text.strip())
-               
-#         companies.append(user_companies)
-
 
         user_companies = ""
         for i in company_list:
@@ -334,7 +331,7 @@ def get_user_data():
         companies.append(user_companies)
         
     except:
-        companies.append("No Companies ")
+        companies.append("No Companies^ ")
         
 
 
@@ -388,83 +385,33 @@ def clean_list(interest):
     return clean_list
 
 
-# In[1537]:
+# In[1689]:
 
 
-# company_list = ",".join(companies)
-# company_count = word_counter(company_list)
-# common_companies = get_df(company_count)
+def count_interests():
+    company_list = ",".join(companies)
+    company_count = word_counter(company_list)
+    common_companies = get_df(company_count)
 
-# influencer_list = ",".join(influencers)
-# influencer_count = word_counter(influencer_list)
-# common_influencers = get_df(influencer_count)
-
-
-# In[1538]:
+    influencer_list = ",".join(influencers)
+    influencer_count = word_counter(influencer_list)
+    common_influencers = get_df(influencer_count)
 
 
-# companies = []
-
-# #Scrape the companies the user follows
-#     try:
-#         company_path = "//a[@id='pv-interests-modal__following-companies']"
-#         browser.find_element_by_xpath(company_path).click()
-        
-#         time.sleep(2)
-        
-#         #Scroll the end of list
-#         class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
-#         #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
-#         scroll_popup(class_name)
-        
-    
-#         company_page = browser.page_source
-#         company_page = bs(company_page.encode("utf-8"), "html")
-#         company_list = company_page.findAll("li",{"class":"entity-list-item"})
-        
-#         user_companies = []
-#         for i in company_list:
-#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
-#             user_companies.append(name.text.strip())
-               
-#         companies.append(user_companies)
-        
-#     except:
-#         companies.append("No Companies")
+# In[1681]:
 
 
-# In[1539]:
+def plot_interests():
+    company_plot = common_companies[0:19].plot.barh(x='Word',y='Count')
+    company_plot.invert_yaxis()
+    company_plot.figure.savefig("c_plot.png", dpi = 100, bbox_inches = "tight")
+
+    influencer_plot = common_influencers[0:19].plot.barh(x='Word',y='Count')
+    influencer_plot.invert_yaxis()
+    influencer_plot.figure.savefig("i_plot.png", dpi = 100, bbox_inches = "tight")
 
 
-# influencers = []
-
-# #Scrape the influencers the user follows
-#     try:
-#         influencer_path = "//a[@id='pv-interests-modal__following-influencers']"
-#         browser.find_element_by_xpath(influencer_path).click()
-        
-#         #Scroll the end of list
-#         class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
-#         #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
-#         scroll_popup(class_name)
-        
-#         influencer_page = browser.page_source
-#         influencer_page = bs(influencer_page.encode("utf-8"), "html")
-#         influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
-        
-#         user_influencers = []
-#         for i in influencer_list:
-#             name = i.find("span",{"class":"pv-entity__summary-title-text"})
-#             user_influencers.append(name.text.strip())
-               
-#         influencers.append(user_influencers)
-        
-#     except:
-#         influencers.append("No Influencers")
-        
-
-
-# In[1564]:
+# In[1690]:
 
 
 def export_df():
@@ -485,24 +432,34 @@ def export_df():
     #Exporting csv to program folder
     df.to_csv("linkedin_page_followers.csv", encoding='utf-8', index=False)
     
-    company_list = ",".join(companies)
-    company_count = word_counter(company_list)
-    common_companies = get_df(company_count)
-
-    influencer_list = ",".join(influencers)
-    influencer_count = word_counter(influencer_list)
-    common_influencers = get_df(influencer_count)
-
-#     #Export to Excel
-#     writer = pd.ExcelWriter("linkedin_page_followers.xlsx", engine='xlsxwriter')
-#     df.to_excel(writer, index =False)
-#     writer.save()
+    #Get data frames of interest counts
+    count_interests()
     
+    #Plot the interest counts
+    plot_interests()
+    
+    #Create/Update Excel file
     writer = pd.ExcelWriter("linkedin_page_followers.xlsx", engine='xlsxwriter')
     df.to_excel(writer, sheet_name='Page Egagers', index=False)
     common_companies.to_excel(writer, sheet_name='Company Interest', index=False)
     common_influencers.to_excel(writer, sheet_name='Influencer Interest', index=False)
     writer.save()
+    
+    wb = load_workbook('linkedin_page_followers.xlsx')
+
+    #Adding plots to the sheets
+    cws = wb["Company Interest"]
+    c_img = openpyxl.drawing.image.Image('c_plot.png')
+    c_img.anchor = 'D3'
+    cws.add_image(c_img)
+
+    iws = wb["Influencer Interest"]
+    i_img = openpyxl.drawing.image.Image('i_plot.png')
+    i_img.anchor = 'D3'
+    iws.add_image(i_img)
+
+    #Save Excel file
+    wb.save('linkedin_page_followers.xlsx')
 
 
 # In[1565]:
@@ -566,6 +523,8 @@ while True:
         #Random long sleep function to prevent linkedin rate limit
         time.sleep(random.randint(20,1200))
        
+        #Make daily page view limit: ~250
+    
         #Stop for the night
         while current_time() < "07:05":
             schedule.run_pending()
