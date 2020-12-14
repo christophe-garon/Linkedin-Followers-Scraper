@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1584]:
+# In[1797]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -32,46 +32,19 @@ caffeine.on(display=True)
 try:
     f= open("credentials.txt","r")
     contents = f.read()
-    username = contents.replace(":",",").split(",")[1]
-    password = contents.replace(":",",").split(",")[3]
-    page = contents.replace(":",",").split(",")[5]
+    username = contents.replace("=",",").split(",")[1]
+    password = contents.replace("=",",").split(",")[3]
+    page = contents.replace("=",",").split(",")[5]
 except:
     f= open("credentials.txt","w+")
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
     page = input("What is url of the page you want to scrape? ")
-    f.write("username:{}, password:{}, page:{}".format(username,password,page))
+    f.write("username={}, password={}, page={}".format(username,password,page))
     f.close()
 
 
-# In[ ]:
-
-
-#accessing Chromedriver
-browser = webdriver.Chrome('chromedriver')
-
-#Open login page
-browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
-
-#Enter login info:
-elementID = browser.find_element_by_id('username')
-elementID.send_keys(username)
-
-elementID = browser.find_element_by_id('password')
-elementID.send_keys(password)
-elementID.submit()
-
-#Go to company webpage
-browser.get(page + 'posts/')
-time.sleep(2)
-
-
-likers = browser.find_element_by_class_name('social-details-social-counts__count-value')
-likers.click()
-time.sleep(2)
-
-
-# In[1557]:
+# In[1798]:
 
 
 #Scrolls the main page
@@ -96,7 +69,7 @@ def scroll():
         last_height = new_height
 
 
-# In[1558]:
+# In[1799]:
 
 
 #Scrolls popups
@@ -123,7 +96,29 @@ def scroll_popup(class_name):
         last_height = new_height
 
 
-# In[1559]:
+# In[1800]:
+
+
+#accessing Chromedriver
+browser = webdriver.Chrome('chromedriver')
+
+#Open login page
+browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
+
+#Enter login info:
+elementID = browser.find_element_by_id('username')
+elementID.send_keys(username)
+
+elementID = browser.find_element_by_id('password')
+elementID.send_keys(password)
+elementID.submit()
+
+#Go to company webpage
+browser.get(page + 'posts/')
+time.sleep(2)
+
+
+# In[1802]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -201,11 +196,11 @@ def est_age():
         
 
 
-# In[1560]:
+# In[1803]:
 
 
 #Lists of the data we will collect
-#liker_names = []
+liker_names = []
 user_gender = []
 liker_locations = []
 liker_headlines = []
@@ -222,9 +217,13 @@ def get_user_data():
     
     #Get Liker Gender
     name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
-    name = name.text.strip().split(" ", 2)
-    user_gender.append(d.get_gender(name[0]))
-    #liker_names.append(name.text.strip())
+    name = name.text.strip()
+    split_name = name.split(" ", 2)
+    user_gender.append(d.get_gender(split_name[0]))
+    if name not in liker_names:
+        liker_names.append(name.text.strip())
+    else:
+        break
     
     #Get Liker Location
     location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
@@ -335,7 +334,7 @@ def get_user_data():
         
 
 
-# In[1561]:
+# In[1804]:
 
 
 def word_counter(words):
@@ -356,7 +355,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[1562]:
+# In[1805]:
 
 
 def get_df(wc):
@@ -374,7 +373,7 @@ def get_df(wc):
     return df
 
 
-# In[1563]:
+# In[1806]:
 
 
 def clean_list(interest):
@@ -385,7 +384,7 @@ def clean_list(interest):
     return clean_list
 
 
-# In[1689]:
+# In[1807]:
 
 
 def count_interests():
@@ -398,7 +397,7 @@ def count_interests():
     common_influencers = get_df(influencer_count)
 
 
-# In[1681]:
+# In[1808]:
 
 
 def plot_interests():
@@ -411,7 +410,7 @@ def plot_interests():
     influencer_plot.figure.savefig("i_plot.png", dpi = 100, bbox_inches = "tight")
 
 
-# In[1690]:
+# In[1809]:
 
 
 def export_df():
@@ -462,7 +461,7 @@ def export_df():
     wb.save('linkedin_page_followers.xlsx')
 
 
-# In[1565]:
+# In[1810]:
 
 
 def current_time():
@@ -472,67 +471,138 @@ def current_time():
 
 #Liker link number we will iterate to the path
 i=1
+
+#Keeping track of number of page visits per day to stay under the limit
+daily_count = 0
+daily_limit = 200
+
 #Scoll length we will iterate
 l=500
+
 #The path of the block that we need to select to scroll
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[1566]:
+# In[1811]:
 
 
-
-while True:
+def scrape_post_likers(): 
     
-    time.sleep(random.randint(3,15))
+    global i
+    global l
+    global daily_count
+    global daily_limit
     
-    path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-    user_page = browser.find_element_by_xpath(path)
-    user_page.click()
-
-    time.sleep(random.randint(1,3))
-
-    # Switch to the new window and scroll and retry if it wasn't found
-    try:
-        browser.switch_to.window(browser.window_handles[1])
-    except:
-        print("One sec, I need to scroll")
-        browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
-        time.sleep(2)
-        l += 500
-        path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-        user_page = browser.find_element_by_xpath(path)
-        user_page.click()
-        browser.switch_to.window(browser.window_handles[1]) 
-        pass
     
-    time.sleep(random.randint(2,5))
-    get_user_data()
+    while True:
 
-    # Close the tab with URL B
-    browser.close()
-    # Switch back to the first tab with URL A
-    browser.switch_to.window(browser.window_handles[0])
+        try:
 
-    #Iterate save progress if multiple of 10
-    i+=1
-    if i % 10 == 0:
-        export_df()
-        print(i)
-        
-        #Random long sleep function to prevent linkedin rate limit
-        time.sleep(random.randint(20,1200))
-       
-        #Make daily page view limit: ~250
-    
-        #Stop for the night
-        while current_time() < "07:05":
-            schedule.run_pending()
-            time.sleep(60)
+            time.sleep(random.randint(3,15))
+
+            path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+            user_page = browser.find_element_by_xpath(path)
+            user_page.click()
+
+            time.sleep(random.randint(1,3))
+
+            # Switch to the new window and scroll and retry if it wasn't found
+            try:
+                browser.switch_to.window(browser.window_handles[1])
+            except:
+                print("One sec, I need to scroll")
+                browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
+                time.sleep(2)
+                l += 500
+                path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+                user_page = browser.find_element_by_xpath(path)
+                user_page.click()
+                browser.switch_to.window(browser.window_handles[1]) 
+                pass
+
+            time.sleep(random.randint(2,5))
             
-    else:
-        time.sleep(1)
+            #Scrape the users page with function
+            get_user_data()
+
+            # Close the tab with URL B
+            browser.close()
+            # Switch back to the first tab with URL A
+            browser.switch_to.window(browser.window_handles[0])
+
+            #Iterate save progress if multiple of 10
+            i+=1
+            daily_count+=1
+
+            if i % 10 == 0:
+                export_df()
+                print(i)
+
+                #Random long sleep function to prevent linkedin rate limit
+                time.sleep(random.randint(200,1200))
+
+                #Stop if reached daily page view limit
+                if daily_count >= daily_limit:
+                    print("Daily page limit of "+daily_limit+" has been reached. Stopping for the day to prevent auto signout.")
+                    while current_time() > "00:01":
+                        schedule.run_pending()
+                        time.sleep(60)
+                    daily_count = 0
+
+                #Stop for the night
+                while current_time() < "07:05":
+                    schedule.run_pending()
+                    time.sleep(60)
+
+            else:
+                time.sleep(1)
+
+        except:
+            export_df()
+            break
+            
+            
+
+
+# In[ ]:
+
+
+#Open the list of likers for each post and get any new users
+post_index=1
+
+def get_next_post():
+
+    global post_index
+    
+    while True:
         
+        try:
+    
+            try:
+                likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
+                likers.click()
+                time.sleep(2)
+                post_index+=1
+                scrape_post_likers()
+            except:
+                scroll()
+                time.sleep(1)
+                likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
+                likers.click()
+                time.sleep(2)
+                post_index+=1
+                scrape_post_likers()
+                
+        except:
+            print("All Engagers Have Been Scraped")
+            break
+
+
+# In[1812]:
+
+
+#Calling the Master function
+get_next_post()
 
 
 # In[ ]:
