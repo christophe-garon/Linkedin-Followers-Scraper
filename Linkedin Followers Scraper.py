@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1797]:
+# In[1999]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -35,16 +35,46 @@ try:
     username = contents.replace("=",",").split(",")[1]
     password = contents.replace("=",",").split(",")[3]
     page = contents.replace("=",",").split(",")[5]
+    post_index = int(contents.replace("=",",").split(",")[7])
+    i = int(contents.replace("=",",").split(",")[9])
+    l = int(contents.replace("=",",").split(",")[11])
+    page_scroll_length = int(contents.replace("=",",").split(",")[13])
 except:
     f= open("credentials.txt","w+")
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
     page = input("What is url of the page you want to scrape? ")
-    f.write("username={}, password={}, page={}".format(username,password,page))
+    post_index = 1
+    i = 1
+    l = 500
+    page_scroll_length = 500
+    f.write("username={}, password={}, page={}, post_index={}, liker_index={}, scroll_length={}, page_scroll_length={}".format(username,password,page,post_index,i,l,page_scroll_length))
     f.close()
 
 
-# In[1798]:
+# In[1946]:
+
+
+#accessing Chromedriver
+browser = webdriver.Chrome('chromedriver')
+
+#Open login page
+browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
+
+#Enter login info:
+elementID = browser.find_element_by_id('username')
+elementID.send_keys(username)
+
+elementID = browser.find_element_by_id('password')
+elementID.send_keys(password)
+elementID.submit()
+
+#Go to company webpage
+browser.get(page + 'posts/')
+time.sleep(2)
+
+
+# In[2000]:
 
 
 #Scrolls the main page
@@ -69,7 +99,7 @@ def scroll():
         last_height = new_height
 
 
-# In[1799]:
+# In[2001]:
 
 
 #Scrolls popups
@@ -96,29 +126,7 @@ def scroll_popup(class_name):
         last_height = new_height
 
 
-# In[1800]:
-
-
-#accessing Chromedriver
-browser = webdriver.Chrome('chromedriver')
-
-#Open login page
-browser.get('https://www.linkedin.com/login?fromSignIn=true&trk=guest_homepage-basic_nav-header-signin')
-
-#Enter login info:
-elementID = browser.find_element_by_id('username')
-elementID.send_keys(username)
-
-elementID = browser.find_element_by_id('password')
-elementID.send_keys(password)
-elementID.submit()
-
-#Go to company webpage
-browser.get(page + 'posts/')
-time.sleep(2)
-
-
-# In[1802]:
+# In[2002]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -196,7 +204,7 @@ def est_age():
         
 
 
-# In[1803]:
+# In[2003]:
 
 
 #Lists of the data we will collect
@@ -218,123 +226,126 @@ def get_user_data():
     #Get Liker Gender
     name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
     name = name.text.strip()
-    split_name = name.split(" ", 2)
-    user_gender.append(d.get_gender(split_name[0]))
+    
     if name not in liker_names:
-        liker_names.append(name.text.strip())
-    else:
-        break
+        
+        liker_names.append(name)
+        split_name = name.split(" ", 2)
+        user_gender.append(d.get_gender(split_name[0]))
     
-    #Get Liker Location
-    location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
-    liker_locations.append(location.text.strip())
-    
-    #Get Liker Headline
-    headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
-    liker_headlines.append(headline.text.strip())
-    
+        #Get Liker Location
+        location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
+        liker_locations.append(location.text.strip())
 
-    #Get Liker Bio
-    try:
-        browser.find_element_by_xpath("//a[@id='line-clamp-show-more-button']").click()
-        time.sleep(1)
-        user_profile = browser.page_source
-        user_profile = bs(user_profile.encode("utf-8"), "html")
-        bio = user_profile.findAll("span",{"class":"lt-line-clamp__raw-line"})
-        user_bios.append(bio[0].text.strip())
-    except:
+        #Get Liker Headline
+        headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
+        liker_headlines.append(headline.text.strip())
+
+
+        #Get Liker Bio
         try:
-            bio_lines = []
-            bios = user_profile.findAll('span',{"class":"lt-line-clamp__line"})
-            for b in bios:
-                bio_lines.append(b.text.strip())
-            bio = ",".join(bio_lines).replace(",", ". ")
-            user_bios.append(bio)
-            
+            browser.find_element_by_xpath("//a[@id='line-clamp-show-more-button']").click()
+            time.sleep(1)
+            user_profile = browser.page_source
+            user_profile = bs(user_profile.encode("utf-8"), "html")
+            bio = user_profile.findAll("span",{"class":"lt-line-clamp__raw-line"})
+            user_bios.append(bio[0].text.strip())
         except:
-            user_bios.append('No Bio')
-            pass
-    
-    #Get estimated age using our age function
-    age = est_age()
-    est_ages.append(age)
-    
-    
-    #Click see more on user interests
-    try: 
-        interest_path = "//a[@data-control-name='view_interest_details']"
-        browser.find_element_by_xpath(interest_path).click()
-    except:
-        scroll()
-        time.sleep(1)
-        try:
+            try:
+                bio_lines = []
+                bios = user_profile.findAll('span',{"class":"lt-line-clamp__line"})
+                for b in bios:
+                    bio_lines.append(b.text.strip())
+                bio = ",".join(bio_lines).replace(",", ". ")
+                user_bios.append(bio)
+
+            except:
+                user_bios.append('No Bio')
+                pass
+
+        #Get estimated age using our age function
+        age = est_age()
+        est_ages.append(age)
+
+
+        #Click see more on user interests
+        try: 
             interest_path = "//a[@data-control-name='view_interest_details']"
             browser.find_element_by_xpath(interest_path).click()
         except:
-            #append no interests to lists
-            pass
-    
-    time.sleep(1)
-    
-    #Scrape the influencers the user follows
-    try:
-        influencer_path = "//a[@id='pv-interests-modal__following-influencers']"
-        browser.find_element_by_xpath(influencer_path).click()
-        
-        #Scroll the end of list
-        class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
-        #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
-        scroll_popup(class_name)
-        
-        influencer_page = browser.page_source
-        influencer_page = bs(influencer_page.encode("utf-8"), "html")
-        influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
-        
+            scroll()
+            time.sleep(1)
+            try:
+                interest_path = "//a[@data-control-name='view_interest_details']"
+                browser.find_element_by_xpath(interest_path).click()
+            except:
+                #append no interests to lists
+                pass
 
-        user_influencers = ""
-        for i in influencer_list:
-            name = i.find("span",{"class":"pv-entity__summary-title-text"})
-            user_influencers += name.text.strip() + "^ "
-               
-        influencers.append(user_influencers)
-        
-        
-    except:
-        influencers.append("No Influencers^ ")
+        time.sleep(1)
+
+        #Scrape the influencers the user follows
+        try:
+            influencer_path = "//a[@id='pv-interests-modal__following-influencers']"
+            browser.find_element_by_xpath(influencer_path).click()
+
+            #Scroll the end of list
+            class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
+            #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
+            scroll_popup(class_name)
+
+            influencer_page = browser.page_source
+            influencer_page = bs(influencer_page.encode("utf-8"), "html")
+            influencer_list = influencer_page.findAll("li",{"class":"entity-list-item"})
 
 
-    
-    #Scrape the companies the user follows
-    try:
-        company_path = "//a[@id='pv-interests-modal__following-companies']"
-        browser.find_element_by_xpath(company_path).click()
-        
-        time.sleep(2)
-        
-        #Scroll the end of list
-        class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
-        #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
-        scroll_popup(class_name)
-        
-    
-        company_page = browser.page_source
-        company_page = bs(company_page.encode("utf-8"), "html")
-        company_list = company_page.findAll("li",{"class":"entity-list-item"})
-        
+            user_influencers = ""
+            for i in influencer_list:
+                name = i.find("span",{"class":"pv-entity__summary-title-text"})
+                user_influencers += name.text.strip() + "^ "
 
-        user_companies = ""
-        for i in company_list:
-            name = i.find("span",{"class":"pv-entity__summary-title-text"})
-            user_companies += name.text.strip() + "^ "
-               
-        companies.append(user_companies)
-        
-    except:
-        companies.append("No Companies^ ")
-        
+            influencers.append(user_influencers)
 
 
-# In[1804]:
+        except:
+            influencers.append("No Influencers^ ")
+
+
+
+        #Scrape the companies the user follows
+        try:
+            company_path = "//a[@id='pv-interests-modal__following-companies']"
+            browser.find_element_by_xpath(company_path).click()
+
+            time.sleep(2)
+
+            #Scroll the end of list
+            class_name = 'entity-all pv-interests-list ml4 pt2 ember-view'
+            #interest_box_path = "//div[@class='entity-all pv-interests-list ml4 pt2 ember-view']"
+            scroll_popup(class_name)
+
+
+            company_page = browser.page_source
+            company_page = bs(company_page.encode("utf-8"), "html")
+            company_list = company_page.findAll("li",{"class":"entity-list-item"})
+
+
+            user_companies = ""
+            for i in company_list:
+                name = i.find("span",{"class":"pv-entity__summary-title-text"})
+                user_companies += name.text.strip() + "^ "
+
+            companies.append(user_companies)
+
+        except:
+            companies.append("No Companies^ ")
+            
+    else:
+        pass
+        
+
+
+# In[2004]:
 
 
 def word_counter(words):
@@ -355,7 +366,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[1805]:
+# In[2005]:
 
 
 def get_df(wc):
@@ -373,7 +384,7 @@ def get_df(wc):
     return df
 
 
-# In[1806]:
+# In[2006]:
 
 
 def clean_list(interest):
@@ -384,20 +395,22 @@ def clean_list(interest):
     return clean_list
 
 
-# In[1807]:
+# In[2007]:
 
 
 def count_interests():
-    company_list = ",".join(companies)
+    company_list = ",".join(companies).replace(',','')
     company_count = word_counter(company_list)
     common_companies = get_df(company_count)
 
-    influencer_list = ",".join(influencers)
+    influencer_list = ",".join(influencers).replace(',','')
     influencer_count = word_counter(influencer_list)
     common_influencers = get_df(influencer_count)
+    
+    return common_companies, common_influencers
 
 
-# In[1808]:
+# In[2008]:
 
 
 def plot_interests():
@@ -410,7 +423,7 @@ def plot_interests():
     influencer_plot.figure.savefig("i_plot.png", dpi = 100, bbox_inches = "tight")
 
 
-# In[1809]:
+# In[2009]:
 
 
 def export_df():
@@ -432,7 +445,7 @@ def export_df():
     df.to_csv("linkedin_page_followers.csv", encoding='utf-8', index=False)
     
     #Get data frames of interest counts
-    count_interests()
+    common_companies, common_influencers = count_interests()
     
     #Plot the interest counts
     plot_interests()
@@ -461,37 +474,35 @@ def export_df():
     wb.save('linkedin_page_followers.xlsx')
 
 
-# In[1810]:
+# In[2010]:
 
 
 def current_time():
     current_time = datetime.now().strftime("%H:%M")
     return current_time
 
-
-#Liker link number we will iterate to the path
-i=1
-
 #Keeping track of number of page visits per day to stay under the limit
 daily_count = 0
 daily_limit = 200
-
-#Scoll length we will iterate
-l=500
 
 #The path of the block that we need to select to scroll
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[1811]:
+# In[2011]:
 
 
 def scrape_post_likers(): 
     
-    global i
-    global l
+    #Global variable we will reference/iterate
     global daily_count
     global daily_limit
+    global block_path
+    
+    #Liker link number we will iterate to the path
+    global i
+    #Scoll length we will iterate
+    global l
     
     
     while True:
@@ -510,15 +521,21 @@ def scrape_post_likers():
             try:
                 browser.switch_to.window(browser.window_handles[1])
             except:
-                print("One sec, I need to scroll")
-                browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
-                time.sleep(2)
-                l += 500
-                path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-                user_page = browser.find_element_by_xpath(path)
-                user_page.click()
-                browser.switch_to.window(browser.window_handles[1]) 
-                pass
+                try:
+                    print("One sec, I need to scroll")
+                    browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
+                    time.sleep(2)
+                    l += 500
+                    path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+                    user_page = browser.find_element_by_xpath(path)
+                    user_page.click()
+                    browser.switch_to.window(browser.window_handles[1]) 
+                    pass
+                except:
+                    i = 1
+                    l = 500
+                    export_df()
+                    break
 
             time.sleep(random.randint(2,5))
             
@@ -537,6 +554,11 @@ def scrape_post_likers():
             if i % 10 == 0:
                 export_df()
                 print(i)
+                
+                #Keeping track of what post and user we are at as well as the distance down that page we are
+                f= open("credentials.txt","w+")
+                f.write("username={}, password={}, page={}, post_index={}, liker_index={}, scroll_length={}, page_scroll_length={}".format(username,password,page,post_index,i,l,page_scroll_length))
+                f.close()
 
                 #Random long sleep function to prevent linkedin rate limit
                 time.sleep(random.randint(200,1200))
@@ -558,21 +580,24 @@ def scrape_post_likers():
                 time.sleep(1)
 
         except:
+            i = 1
+            l = 500
             export_df()
+            browser.get(page + 'posts/')
+            time.sleep(2)
             break
             
             
 
 
-# In[ ]:
+# In[1927]:
 
 
 #Open the list of likers for each post and get any new users
-post_index=1
-
 def get_next_post():
 
     global post_index
+    global page_scroll_length
     
     while True:
         
@@ -584,8 +609,12 @@ def get_next_post():
                 time.sleep(2)
                 post_index+=1
                 scrape_post_likers()
+                browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
+                page_scroll_length+=500
             except:
-                scroll()
+                print("One sec, I need to scroll")
+                browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
+                page_scroll_length+=500
                 time.sleep(1)
                 likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
                 likers.click()
@@ -594,11 +623,41 @@ def get_next_post():
                 scrape_post_likers()
                 
         except:
-            print("All Engagers Have Been Scraped")
+            print("All engagers have been scraped or block has been recieved. We have kept track of where we left off.")
             break
 
 
-# In[1812]:
+# In[2012]:
+
+
+# def get_next_post():
+
+#     global post_index
+#     global page_scroll_length
+    
+#     while True:
+        
+#         try:
+#             likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
+#             likers.click()
+#             time.sleep(2)
+#             post_index+=1
+#             scrape_post_likers()
+#             browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
+#             page_scroll_length+=500
+#         except:
+#             print("One sec, I need to scroll")
+#             browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
+#             page_scroll_length+=500
+#             time.sleep(1)
+#             likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
+#             likers.click()
+#             time.sleep(2)
+#             post_index+=1
+#             scrape_post_likers()
+
+
+# In[2013]:
 
 
 #Calling the Master function
