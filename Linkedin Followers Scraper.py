@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1999]:
+# In[2052]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -52,7 +52,7 @@ except:
     f.close()
 
 
-# In[1946]:
+# In[2053]:
 
 
 #accessing Chromedriver
@@ -74,7 +74,7 @@ browser.get(page + 'posts/')
 time.sleep(2)
 
 
-# In[2000]:
+# In[2054]:
 
 
 #Scrolls the main page
@@ -99,7 +99,7 @@ def scroll():
         last_height = new_height
 
 
-# In[2001]:
+# In[2055]:
 
 
 #Scrolls popups
@@ -126,7 +126,7 @@ def scroll_popup(class_name):
         last_height = new_height
 
 
-# In[2002]:
+# In[2056]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -204,7 +204,7 @@ def est_age():
         
 
 
-# In[2003]:
+# In[2057]:
 
 
 #Lists of the data we will collect
@@ -341,11 +341,12 @@ def get_user_data():
             companies.append("No Companies^ ")
             
     else:
+        time.sleep(random.randint(2,5))
         pass
         
 
 
-# In[2004]:
+# In[2058]:
 
 
 def word_counter(words):
@@ -366,7 +367,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[2005]:
+# In[2059]:
 
 
 def get_df(wc):
@@ -384,7 +385,7 @@ def get_df(wc):
     return df
 
 
-# In[2006]:
+# In[2060]:
 
 
 def clean_list(interest):
@@ -395,7 +396,7 @@ def clean_list(interest):
     return clean_list
 
 
-# In[2007]:
+# In[2061]:
 
 
 def count_interests():
@@ -410,7 +411,7 @@ def count_interests():
     return common_companies, common_influencers
 
 
-# In[2008]:
+# In[2062]:
 
 
 def plot_interests():
@@ -423,7 +424,7 @@ def plot_interests():
     influencer_plot.figure.savefig("i_plot.png", dpi = 100, bbox_inches = "tight")
 
 
-# In[2009]:
+# In[2063]:
 
 
 def export_df():
@@ -474,7 +475,7 @@ def export_df():
     wb.save('linkedin_page_followers.xlsx')
 
 
-# In[2010]:
+# In[2064]:
 
 
 def current_time():
@@ -489,7 +490,7 @@ daily_limit = 200
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[2011]:
+# In[2065]:
 
 
 def scrape_post_likers(): 
@@ -583,6 +584,7 @@ def scrape_post_likers():
             i = 1
             l = 500
             export_df()
+            browser.switch_to.window(browser.window_handles[0])
             browser.get(page + 'posts/')
             time.sleep(2)
             break
@@ -616,18 +618,13 @@ def get_next_post():
                 browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
                 page_scroll_length+=500
                 time.sleep(1)
-                likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
-                likers.click()
-                time.sleep(2)
-                post_index+=1
-                scrape_post_likers()
                 
         except:
             print("All engagers have been scraped or block has been recieved. We have kept track of where we left off.")
             break
 
 
-# In[2012]:
+# In[2066]:
 
 
 # def get_next_post():
@@ -641,23 +638,19 @@ def get_next_post():
 #             likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
 #             likers.click()
 #             time.sleep(2)
-#             post_index+=1
 #             scrape_post_likers()
 #             browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
 #             page_scroll_length+=500
+#             post_index+=1
 #         except:
 #             print("One sec, I need to scroll")
 #             browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
 #             page_scroll_length+=500
 #             time.sleep(1)
-#             likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
-#             likers.click()
-#             time.sleep(2)
-#             post_index+=1
-#             scrape_post_likers()
+            
 
 
-# In[2013]:
+# In[2067]:
 
 
 #Calling the Master function
