@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2052]:
+# In[2518]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -52,7 +52,7 @@ except:
     f.close()
 
 
-# In[2053]:
+# In[2519]:
 
 
 #accessing Chromedriver
@@ -69,12 +69,12 @@ elementID = browser.find_element_by_id('password')
 elementID.send_keys(password)
 elementID.submit()
 
-#Go to company webpage
-browser.get(page + 'posts/')
-time.sleep(2)
+# #Go to company webpage
+# browser.get(page + 'posts/')
+# time.sleep(2)
 
 
-# In[2054]:
+# In[2520]:
 
 
 #Scrolls the main page
@@ -99,7 +99,7 @@ def scroll():
         last_height = new_height
 
 
-# In[2055]:
+# In[2521]:
 
 
 #Scrolls popups
@@ -126,7 +126,7 @@ def scroll_popup(class_name):
         last_height = new_height
 
 
-# In[2056]:
+# In[2522]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -204,7 +204,7 @@ def est_age():
         
 
 
-# In[2057]:
+# In[2523]:
 
 
 #Lists of the data we will collect
@@ -231,11 +231,11 @@ def get_user_data():
         
         liker_names.append(name)
         split_name = name.split(" ", 2)
-        user_gender.append(d.get_gender(split_name[0]))
+        user_gender.append(d.get_gender(split_name[0])+"^ ")
     
         #Get Liker Location
         location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
-        liker_locations.append(location.text.strip())
+        liker_locations.append(location.text.strip()+"^ ")
 
         #Get Liker Headline
         headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
@@ -266,6 +266,7 @@ def get_user_data():
         #Get estimated age using our age function
         age = est_age()
         est_ages.append(age)
+        
 
 
         #Click see more on user interests
@@ -346,7 +347,7 @@ def get_user_data():
         
 
 
-# In[2058]:
+# In[2524]:
 
 
 def word_counter(words):
@@ -358,37 +359,50 @@ def word_counter(words):
         word = word.replace("â€˜","")
         word = word.replace("*","")
         word = word.replace("?","")
+        word = word.replace("mostly_male","male")
+        word = word.replace("mostly_female","female")
         
-        if word not in wordcount:
-            wordcount[word] = 1
+        if word != "No Influencers" and word != "No Companies" and word != "unknown" and word != "":
+            if word not in wordcount:
+                wordcount[word] = 1
+            else:
+                wordcount[word] += 1
         else:
-            wordcount[word] += 1
+            pass
             
     return wordcount
 
 
-# In[2059]:
+# In[2525]:
 
 
 def get_df(wc):
+    
+    total_scraped = len(user_gender)
+    
     trimmed_count = collections.Counter(wc).most_common(100)
 
     words = []
     count = []
+    percent = []
     for item in trimmed_count:
         words.append(item[0])
         count.append(item[1])
+        
+    for c in count:
+        percent.append(round(((c/total_scraped) * 100), 2))
+        
 
-    data = {"Word": words,"Count": count}
+    data = {"Word": words,"Count": count, "Percentage": percent}
 
     df = pd.DataFrame(data, index =None)
     return df
 
 
-# In[2060]:
+# In[2526]:
 
 
-def clean_list(interest):
+def clean_interests(interest):
     clean_list = []
     for item in interest:
         clean = item.replace('^',',')
@@ -396,7 +410,18 @@ def clean_list(interest):
     return clean_list
 
 
-# In[2061]:
+# In[2527]:
+
+
+def clean_list(interest):
+    clean_list = []
+    for item in interest:
+        clean = item.replace('^','')
+        clean_list.append(clean.title())
+    return clean_list
+
+
+# In[2528]:
 
 
 def count_interests():
@@ -408,54 +433,93 @@ def count_interests():
     influencer_count = word_counter(influencer_list)
     common_influencers = get_df(influencer_count)
     
-    return common_companies, common_influencers
+    gender_list = ",".join(user_gender).replace(',','')
+    gender_count = word_counter(gender_list)
+    common_genders = get_df(gender_count)
+
+    location_list = ",".join(liker_locations).replace(',','')
+    location_count = word_counter(location_list)
+    common_locations = get_df(location_count)
+    
+    return common_companies, common_influencers, common_genders, common_locations
 
 
-# In[2062]:
+# In[2529]:
 
 
-def plot_interests():
-    company_plot = common_companies[0:19].plot.barh(x='Word',y='Count')
+def plot_interests(df1,df2,df3,df4):
+    company_plot = df1[0:24].plot.barh(x='Word',y='Percentage')
     company_plot.invert_yaxis()
+    company_plot.set_ylabel('Companies')
     company_plot.figure.savefig("c_plot.png", dpi = 100, bbox_inches = "tight")
 
-    influencer_plot = common_influencers[0:19].plot.barh(x='Word',y='Count')
+    influencer_plot = df2[0:24].plot.barh(x='Word',y='Percentage')
     influencer_plot.invert_yaxis()
+    influencer_plot.set_ylabel('Influencers')
     influencer_plot.figure.savefig("i_plot.png", dpi = 100, bbox_inches = "tight")
+    
+    gender_plot = df3[0:24].plot.barh(x='Word',y='Percentage')
+    gender_plot.invert_yaxis()
+    gender_plot.set_ylabel('Gender')
+    gender_plot.figure.savefig("g_plot.png", dpi = 100, bbox_inches = "tight")
+
+    location_plot = df4[0:24].plot.barh(x='Word',y='Percentage')
+    location_plot.invert_yaxis()
+    location_plot.set_ylabel('Locations')
+    location_plot.figure.savefig("l_plot.png", dpi = 100, bbox_inches = "tight")
+    
 
 
-# In[2063]:
+# In[2530]:
 
 
 def export_df():
     #Constructing Pandas Dataframe
     data = {
-        "Gender": user_gender,
-        "Location": liker_locations,
+        "Gender": clean_list(user_gender),
+        "Location": clean_list(liker_locations),
         "Age": est_ages,
         "Headline": liker_headlines,
         "Bio": user_bios,
-        "Followed Influencers": clean_list(influencers),
-        "Followed Companies": clean_list(companies)
+        "Followed Influencers": clean_interests(influencers),
+        "Followed Companies": clean_interests(companies)
     }
 
     df = pd.DataFrame(data)
-
+    
+    
+    age_list = []
+    for a in df["Age"]:
+        if a != "unknown":
+            age_list.append(int(a))
+        else:
+            pass
+        
+    age_data = {"Ages": age_list}    
+    
+    ages = pd.DataFrame(age_data)
+    age_stats = ages.describe()
+    age_stats = pd.DataFrame(age_stats)
+    
+    
 
     #Exporting csv to program folder
     df.to_csv("linkedin_page_followers.csv", encoding='utf-8', index=False)
     
     #Get data frames of interest counts
-    common_companies, common_influencers = count_interests()
+    common_companies, common_influencers, common_genders, common_locations = count_interests()
     
     #Plot the interest counts
-    plot_interests()
+    plot_interests(common_companies, common_influencers, common_genders, common_locations)
+    
+    time.sleep(1)
     
     #Create/Update Excel file
     writer = pd.ExcelWriter("linkedin_page_followers.xlsx", engine='xlsxwriter')
     df.to_excel(writer, sheet_name='Page Egagers', index=False)
     common_companies.to_excel(writer, sheet_name='Company Interest', index=False)
     common_influencers.to_excel(writer, sheet_name='Influencer Interest', index=False)
+    age_stats.to_excel(writer, sheet_name='Demographic Stats', index=True)
     writer.save()
     
     wb = load_workbook('linkedin_page_followers.xlsx')
@@ -463,19 +527,27 @@ def export_df():
     #Adding plots to the sheets
     cws = wb["Company Interest"]
     c_img = openpyxl.drawing.image.Image('c_plot.png')
-    c_img.anchor = 'D3'
+    c_img.anchor = 'E5'
     cws.add_image(c_img)
 
     iws = wb["Influencer Interest"]
     i_img = openpyxl.drawing.image.Image('i_plot.png')
-    i_img.anchor = 'D3'
+    i_img.anchor = 'E5'
     iws.add_image(i_img)
+    
+    dws = wb["Demographic Stats"]
+    g_img = openpyxl.drawing.image.Image('g_plot.png')
+    g_img.anchor = 'D2'
+    dws.add_image(g_img)
+    l_img = openpyxl.drawing.image.Image('l_plot.png')
+    l_img.anchor = 'B21'
+    dws.add_image(l_img)
 
     #Save Excel file
     wb.save('linkedin_page_followers.xlsx')
 
 
-# In[2064]:
+# In[2531]:
 
 
 def current_time():
@@ -490,7 +562,7 @@ daily_limit = 200
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[2065]:
+# In[2532]:
 
 
 def scrape_post_likers(): 
@@ -507,39 +579,30 @@ def scrape_post_likers():
     
     
     while True:
-
-        try:
-
-            time.sleep(random.randint(3,15))
-
-            path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-            user_page = browser.find_element_by_xpath(path)
-            user_page.click()
-
-            time.sleep(random.randint(1,3))
+        
+        time.sleep(random.randint(3,15))
+        scrolls = 0
+        
+        
+        while scrolls <= 5:
 
             # Switch to the new window and scroll and retry if it wasn't found
             try:
+                path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+                user_page = browser.find_element_by_xpath(path)
+                user_page.click()
+                time.sleep(random.randint(1,3))
                 browser.switch_to.window(browser.window_handles[1])
+                break
             except:
-                try:
-                    print("One sec, I need to scroll")
-                    browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
-                    time.sleep(2)
-                    l += 500
-                    path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
-                    user_page = browser.find_element_by_xpath(path)
-                    user_page.click()
-                    browser.switch_to.window(browser.window_handles[1]) 
-                    pass
-                except:
-                    i = 1
-                    l = 500
-                    export_df()
-                    break
+                print("One sec, I need to scroll to the next liker")
+                browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
+                time.sleep(2)
+                l += 500
 
-            time.sleep(random.randint(2,5))
-            
+        time.sleep(random.randint(2,5))
+
+        try:
             #Scrape the users page with function
             get_user_data()
 
@@ -555,7 +618,7 @@ def scrape_post_likers():
             if i % 10 == 0:
                 export_df()
                 print(i)
-                
+
                 #Keeping track of what post and user we are at as well as the distance down that page we are
                 f= open("credentials.txt","w+")
                 f.write("username={}, password={}, page={}, post_index={}, liker_index={}, scroll_length={}, page_scroll_length={}".format(username,password,page,post_index,i,l,page_scroll_length))
@@ -584,15 +647,11 @@ def scrape_post_likers():
             i = 1
             l = 500
             export_df()
-            browser.switch_to.window(browser.window_handles[0])
-            browser.get(page + 'posts/')
             time.sleep(2)
             break
-            
-            
 
 
-# In[1927]:
+# In[2533]:
 
 
 #Open the list of likers for each post and get any new users
@@ -600,6 +659,10 @@ def get_next_post():
 
     global post_index
     global page_scroll_length
+    
+    browser.switch_to.window(browser.window_handles[0])
+    browser.get(page + 'posts/')
+    time.sleep(2)
     
     while True:
         
@@ -611,46 +674,24 @@ def get_next_post():
                 time.sleep(2)
                 post_index+=1
                 scrape_post_likers()
+                browser.switch_to.window(browser.window_handles[0])
+                browser.get(page + 'posts/')
+                time.sleep(2)
                 browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
                 page_scroll_length+=500
             except:
-                print("One sec, I need to scroll")
+                print("One sec, I need to scroll to the next post")
                 browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
                 page_scroll_length+=500
                 time.sleep(1)
                 
         except:
             print("All engagers have been scraped or block has been recieved. We have kept track of where we left off.")
+            export_df()
             break
 
 
-# In[2066]:
-
-
-# def get_next_post():
-
-#     global post_index
-#     global page_scroll_length
-    
-#     while True:
-        
-#         try:
-#             likers = browser.find_element_by_xpath("(//ul[@class='social-details-social-counts ember-view'])[{}]/li".format(post_index))
-#             likers.click()
-#             time.sleep(2)
-#             scrape_post_likers()
-#             browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
-#             page_scroll_length+=500
-#             post_index+=1
-#         except:
-#             print("One sec, I need to scroll")
-#             browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
-#             page_scroll_length+=500
-#             time.sleep(1)
-            
-
-
-# In[2067]:
+# In[2535]:
 
 
 #Calling the Master function
