@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2794]:
+# In[3166]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -35,6 +35,7 @@ try:
     username = contents.replace("=",",").split(",")[1]
     password = contents.replace("=",",").split(",")[3]
     page = contents.replace("=",",").split(",")[5]
+    company_name = page[33:-1]
     post_index = int(contents.replace("=",",").split(",")[7])
     i = int(contents.replace("=",",").split(",")[9])
     l = int(contents.replace("=",",").split(",")[11])
@@ -44,6 +45,7 @@ except:
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
     page = input("What is url of the page you want to scrape? ")
+    company_name = page[33:-1]
     post_index = 1
     i = 1
     l = 500
@@ -52,11 +54,11 @@ except:
     f.close()
 
 
-# In[2795]:
+# In[3167]:
 
 
 try:
-    scraped = pd.read_csv('linkedin_followers_backup.csv')
+    scraped = pd.read_csv("{}_linkedin_backup.csv".format(company_name))
     liker_names = list(scraped["Id"])
     user_gender = list(scraped["Gender"])
     liker_locations = list(scraped["Location"])
@@ -77,7 +79,7 @@ except:
     pass
 
 
-# In[2796]:
+# In[3168]:
 
 
 #accessing Chromedriver
@@ -95,7 +97,7 @@ elementID.send_keys(password)
 elementID.submit()
 
 
-# In[2797]:
+# In[3169]:
 
 
 #Scrolls the main page
@@ -120,7 +122,7 @@ def scroll():
         last_height = new_height
 
 
-# In[2798]:
+# In[3170]:
 
 
 #Scrolls popups
@@ -145,9 +147,11 @@ def scroll_popup(class_name):
         if new_height == last_height:
             break
         last_height = new_height
+        
+        
 
 
-# In[2799]:
+# In[3171]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -225,33 +229,43 @@ def est_age():
         
 
 
-# In[2800]:
-
+# In[3172]:
 
 
 #Function that Scrapes user data
 def get_user_data():
+    
+    global skip_count
+      
     browser.switch_to.window(browser.window_handles[1])
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
-    
-    #Get Liker Gender
+
     name = user_profile.find('li',{'class':"inline t-24 t-black t-normal break-words"})
     name = name.text.strip()
-    
+
+    #Make sure liker isn't a duplicate
     if name not in liker_names:
-        
+
+        skip_count = 0
         liker_names.append(name)
         split_name = name.split(" ", 2)
+        #Get Liker Gender
         user_gender.append(d.get_gender(split_name[0])+"^ ")
-    
-        #Get Liker Location
-        location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
-        liker_locations.append(location.text.strip()+"^ ")
 
-        #Get Liker Headline
-        headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
-        liker_headlines.append(headline.text.strip())
+        try:
+            #Get Liker Location
+            location = user_profile.find('li',{'class':"t-16 t-black t-normal inline-block"})
+            liker_locations.append(location.text.strip()+"^ ")
+        except:
+            liker_locations.append("No Location")
+
+        try:
+            #Get Liker Headline
+            headline = user_profile.find('h2',{"class":"mt1 t-18 t-black t-normal break-words"})
+            liker_headlines.append(headline.text.strip())
+        except:
+            liker_headlines.append("No Headline")
 
 
         #Get Liker Bio
@@ -278,7 +292,7 @@ def get_user_data():
         #Get estimated age using our age function
         age = est_age()
         est_ages.append(age)
-        
+
 
 
         #Click see more on user interests
@@ -353,14 +367,14 @@ def get_user_data():
 
         except:
             companies.append("No Companies^ ")
-            
+
     else:
-        time.sleep(random.randint(2,5))
-        pass
+        skip_count+=1
+        time.sleep(random.randint(2,7))
         
 
 
-# In[2801]:
+# In[3174]:
 
 
 def word_counter(words):
@@ -386,7 +400,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[2802]:
+# In[3175]:
 
 
 def get_df(wc):
@@ -412,7 +426,7 @@ def get_df(wc):
     return df
 
 
-# In[2803]:
+# In[3176]:
 
 
 def clean_list(interest):
@@ -423,7 +437,7 @@ def clean_list(interest):
     return clean_list
 
 
-# In[2805]:
+# In[3177]:
 
 
 def clean_interests(interest):
@@ -434,7 +448,7 @@ def clean_interests(interest):
     return clean_list
 
 
-# In[2807]:
+# In[3178]:
 
 
 def count_interests():
@@ -457,7 +471,7 @@ def count_interests():
     return common_companies, common_influencers, common_genders, common_locations
 
 
-# In[2808]:
+# In[3179]:
 
 
 def plot_interests(df1,df2,df3,df4):
@@ -483,7 +497,7 @@ def plot_interests(df1,df2,df3,df4):
     
 
 
-# In[2809]:
+# In[3180]:
 
 
 def export_df():
@@ -531,7 +545,7 @@ def export_df():
     
 
     #Exporting csv to program folder for backup
-    backup_df.to_csv("linkedin_followers_backup.csv", encoding='utf-8', index=False)
+    backup_df.to_csv("{}_linkedin_backup.csv".format(company_name), encoding='utf-8', index=False)
     
     #Get data frames of interest counts
     common_companies, common_influencers, common_genders, common_locations = count_interests()
@@ -542,14 +556,14 @@ def export_df():
     time.sleep(1)
     
     #Create/Update Excel file
-    writer = pd.ExcelWriter("linkedin_page_followers.xlsx", engine='xlsxwriter')
+    writer = pd.ExcelWriter("{}_linkedin.xlsx".format(company_name), engine='xlsxwriter')
     df.to_excel(writer, sheet_name='Page Egagers', index=False)
     common_companies.to_excel(writer, sheet_name='Company Interest', index=False)
     common_influencers.to_excel(writer, sheet_name='Influencer Interest', index=False)
     age_stats.to_excel(writer, sheet_name='Demographic Stats', index=True)
     writer.save()
     
-    wb = load_workbook('linkedin_page_followers.xlsx')
+    wb = load_workbook("{}_linkedin.xlsx".format(company_name))
 
     #Adding plots to the sheets
     cws = wb["Company Interest"]
@@ -571,7 +585,7 @@ def export_df():
     dws.add_image(l_img)
 
     #Save Excel file
-    wb.save('linkedin_page_followers.xlsx')
+    wb.save("{}_linkedin.xlsx".format(company_name))
     
     #Keep Track of where we are in the foller list
     f= open("credentials.txt","w+")
@@ -579,7 +593,7 @@ def export_df():
     f.close()
 
 
-# In[2810]:
+# In[3181]:
 
 
 def current_time():
@@ -594,29 +608,33 @@ daily_limit = 200
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[2811]:
+# In[3182]:
 
 
+#Scraping the list of likers from the post
 def scrape_post_likers(): 
     
     #Global variable we will reference/iterate
     global daily_count
     global daily_limit
     global block_path
+    global post_index
+    skip_count = 0
     
     #Liker link number we will iterate to the path
     global i
-    #Scoll length we will iterate
-    global l
+    
+    #Get Length of Entire Liker List
+    class_name = 'artdeco-modal__content social-details-reactors-modal__content ember-view'
+    js_code = "return document.getElementsByClassName('{}')[0].scrollHeight".format(class_name)
+    last_height = browser.execute_script(js_code)
     
     
-    while True:
+    while skip_count<=10:
         
         time.sleep(random.randint(3,15))
-        scrolls = 0
         
-        
-        while scrolls <= 15:
+        while True:
 
             # Switch to the new window and scroll and retry if it wasn't found
             try:
@@ -628,22 +646,36 @@ def scrape_post_likers():
                 break
             except:
                 print("One sec, I need to scroll to the next liker")
-                browser.execute_script("arguments[0].scrollTop = arguments[1];",browser.find_element_by_xpath(block_path), l);
+                path = "//div[@class='{}']".format(class_name)
+                browser.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", browser.find_element_by_xpath(path))
+
                 time.sleep(2)
-                l += 500
-                scrolls +=1
+                
+                # Calculate new scroll height and compare with last scroll height
+                new_height = browser.execute_script(js_code)
+                if new_height == last_height:
+                    break
+                else:
+                    last_height = new_height
+        
 
         time.sleep(random.randint(2,5))
 
         try:
             #Scrape the users page with function
             get_user_data()
-
-            # Close the tab with URL B
-            browser.close()
-            # Switch back to the first tab with URL A
-            browser.switch_to.window(browser.window_handles[0])
-
+            
+            try:
+                browser.switch_to.window(browser.window_handles[1])
+                 # Close the tab with URL B
+                browser.close()
+                # Switch back to the first tab with URL A
+                browser.switch_to.window(browser.window_handles[0])
+            except:
+                browser.switch_to.window(browser.window_handles[0])
+                pass
+                
+                
             #Iterate save progress if multiple of 10
             i+=1
             daily_count+=1
@@ -654,7 +686,7 @@ def scrape_post_likers():
                     print(i)
                 except:
                     print("Hmmm...Failed to Export.")
-                
+
 
                 #Random long sleep function to prevent linkedin rate limit
                 time.sleep(random.randint(200,1200))
@@ -676,15 +708,14 @@ def scrape_post_likers():
                 time.sleep(1)
 
         except:
+            post_index+=1
             export_df()
             i = 1
-            l = 500
-            post_index+=1
             time.sleep(2)
             break
 
 
-# In[2812]:
+# In[3185]:
 
 
 #Open the list of likers for each post and get any new users
@@ -715,7 +746,6 @@ def get_next_post():
         except:
             if scroll_attempts <= 5:
                 if scroll_attempts < 1: 
-                    browser.close()
                     browser.get(page + 'posts/')
                     time.sleep(2)
 
@@ -731,11 +761,17 @@ def get_next_post():
                     
 
 
-# In[2813]:
+# In[3186]:
 
 
 #Calling the Master function
 get_next_post()
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
