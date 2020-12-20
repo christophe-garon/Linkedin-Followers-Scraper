@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[3166]:
+# In[106]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -37,9 +37,7 @@ try:
     page = contents.replace("=",",").split(",")[5]
     company_name = page[33:-1]
     post_index = int(contents.replace("=",",").split(",")[7])
-    i = int(contents.replace("=",",").split(",")[9])
-    l = int(contents.replace("=",",").split(",")[11])
-    page_scroll_length = int(contents.replace("=",",").split(",")[13])
+    user_index = int(contents.replace("=",",").split(",")[9])
 except:
     f= open("credentials.txt","w+")
     username = input('Enter your linkedin username: ')
@@ -47,14 +45,12 @@ except:
     page = input("What is url of the page you want to scrape? ")
     company_name = page[33:-1]
     post_index = 1
-    i = 1
-    l = 500
-    page_scroll_length = 500
-    f.write("username={}, password={}, page={}, post_index={}, liker_index={}, scroll_length={}, page_scroll_length={}".format(username,password,page,post_index,i,l,page_scroll_length))
+    user_index = 1
+    f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
 
 
-# In[3167]:
+# In[107]:
 
 
 try:
@@ -79,7 +75,7 @@ except:
     pass
 
 
-# In[3168]:
+# In[108]:
 
 
 #accessing Chromedriver
@@ -97,7 +93,7 @@ elementID.send_keys(password)
 elementID.submit()
 
 
-# In[3169]:
+# In[109]:
 
 
 #Scrolls the main page
@@ -122,7 +118,7 @@ def scroll():
         last_height = new_height
 
 
-# In[3170]:
+# In[110]:
 
 
 #Scrolls popups
@@ -151,7 +147,7 @@ def scroll_popup(class_name):
         
 
 
-# In[3171]:
+# In[111]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -229,7 +225,7 @@ def est_age():
         
 
 
-# In[3172]:
+# In[112]:
 
 
 #Function that Scrapes user data
@@ -237,7 +233,6 @@ def get_user_data():
     
     global skip_count
       
-    browser.switch_to.window(browser.window_handles[1])
     user_profile = browser.page_source
     user_profile = bs(user_profile.encode("utf-8"), "html")
 
@@ -374,7 +369,7 @@ def get_user_data():
         
 
 
-# In[3174]:
+# In[113]:
 
 
 def word_counter(words):
@@ -400,7 +395,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[3175]:
+# In[114]:
 
 
 def get_df(wc):
@@ -426,7 +421,7 @@ def get_df(wc):
     return df
 
 
-# In[3176]:
+# In[115]:
 
 
 def clean_list(interest):
@@ -437,7 +432,7 @@ def clean_list(interest):
     return clean_list
 
 
-# In[3177]:
+# In[116]:
 
 
 def clean_interests(interest):
@@ -448,7 +443,7 @@ def clean_interests(interest):
     return clean_list
 
 
-# In[3178]:
+# In[117]:
 
 
 def count_interests():
@@ -471,7 +466,7 @@ def count_interests():
     return common_companies, common_influencers, common_genders, common_locations
 
 
-# In[3179]:
+# In[118]:
 
 
 def plot_interests(df1,df2,df3,df4):
@@ -497,7 +492,7 @@ def plot_interests(df1,df2,df3,df4):
     
 
 
-# In[3180]:
+# In[119]:
 
 
 def export_df():
@@ -589,11 +584,11 @@ def export_df():
     
     #Keep Track of where we are in the foller list
     f= open("credentials.txt","w+")
-    f.write("username={}, password={}, page={}, post_index={}, liker_index={}, scroll_length={}, page_scroll_length={}".format(username,password,page,post_index,i,l,page_scroll_length))
+    f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
 
 
-# In[3181]:
+# In[120]:
 
 
 def current_time():
@@ -608,7 +603,7 @@ daily_limit = 200
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[3182]:
+# In[121]:
 
 
 #Scraping the list of likers from the post
@@ -622,7 +617,7 @@ def scrape_post_likers():
     skip_count = 0
     
     #Liker link number we will iterate to the path
-    global i
+    global user_idex
     
     #Get Length of Entire Liker List
     class_name = 'artdeco-modal__content social-details-reactors-modal__content ember-view'
@@ -630,15 +625,21 @@ def scrape_post_likers():
     last_height = browser.execute_script(js_code)
     
     
-    while skip_count<=10:
+    while True:
         
+        if skip_count <=10:
+            pass
+        else:
+            print("Looks like we've scaped this post already. Let's go to the next.")
+            break
+            
         time.sleep(random.randint(3,15))
         
         while True:
 
             # Switch to the new window and scroll and retry if it wasn't found
             try:
-                path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(i) 
+                path = "//ul[@class='artdeco-list artdeco-list--offset-1']/li[{}]".format(user_index) 
                 user_page = browser.find_element_by_xpath(path)
                 user_page.click()
                 time.sleep(random.randint(1,3))
@@ -654,6 +655,7 @@ def scrape_post_likers():
                 # Calculate new scroll height and compare with last scroll height
                 new_height = browser.execute_script(js_code)
                 if new_height == last_height:
+                    print("All users on post {} have been scraped".format(post_index))
                     break
                 else:
                     last_height = new_height
@@ -664,71 +666,66 @@ def scrape_post_likers():
         try:
             #Scrape the users page with function
             get_user_data()
+            browser.close()
+            time.sleep(2)
+            # Switch back to the first tab with URL A
+            browser.switch_to.window(browser.window_handles[0])
             
-            try:
-                browser.switch_to.window(browser.window_handles[1])
-                 # Close the tab with URL B
-                browser.close()
-                # Switch back to the first tab with URL A
-                browser.switch_to.window(browser.window_handles[0])
-            except:
-                browser.switch_to.window(browser.window_handles[0])
-                pass
-                
-                
-            #Iterate save progress if multiple of 10
-            i+=1
-            daily_count+=1
-
-            if i % 10 == 0:
-                try:
-                    export_df()
-                    print(i)
-                except:
-                    print("Hmmm...Failed to Export.")
-
-
-                #Random long sleep function to prevent linkedin rate limit
-                time.sleep(random.randint(200,1200))
-
-                #Stop if reached daily page view limit
-                if daily_count >= daily_limit:
-                    print("Daily page limit of "+daily_limit+" has been reached. Stopping for the day to prevent auto signout.")
-                    while current_time() > "00:01":
-                        schedule.run_pending()
-                        time.sleep(60)
-                    daily_count = 0
-
-                #Stop for the night
-                while current_time() < "07:05":
-                    schedule.run_pending()
-                    time.sleep(60)
-
-            else:
-                time.sleep(1)
-
         except:
             post_index+=1
             export_df()
-            i = 1
+            user_index = 1
             time.sleep(2)
             break
 
+                
+                
+        #Iterate save progress if multiple of 10
+        user_index+=1
+        daily_count+=1
 
-# In[3185]:
+        if user_index % 10 == 0:
+            try:
+                export_df()
+                print(user_index)
+            except:
+                print("Hmmm...Failed to Export.")
 
 
+            #Random long sleep function to prevent linkedin rate limit
+            time.sleep(random.randint(200,1200))
+
+            #Stop if reached daily page view limit
+            if daily_count >= daily_limit:
+                print("Daily page limit of "+daily_limit+" has been reached. Stopping for the day to prevent auto signout.")
+                while current_time() > "00:01":
+                    schedule.run_pending()
+                    time.sleep(60)
+                daily_count = 0
+
+            #Stop for the night
+            while current_time() < "07:05":
+                schedule.run_pending()
+                time.sleep(60)
+
+        else:
+            time.sleep(1)
+
+
+# In[122]:
+
+
+#Advanced scrolling
 #Open the list of likers for each post and get any new users
 def get_next_post():
 
     global post_index
-    global page_scroll_length
-    scroll_attempts = 0
     
-    browser.switch_to.window(browser.window_handles[0])
     browser.get(page + 'posts/')
     time.sleep(2)
     
+    last_height = browser.execute_script("return document.body.scrollHeight")
+    print(last_height)
     
     while True:
     
@@ -737,41 +734,37 @@ def get_next_post():
             likers.click()
             time.sleep(2)
             scrape_post_likers()
-            scroll_attempts = 0
             browser.switch_to.window(browser.window_handles[0])
             browser.get(page + 'posts/')
             time.sleep(2)
-            browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
-            page_scroll_length+=500
+            
         except:
-            if scroll_attempts <= 5:
-                if scroll_attempts < 1: 
-                    browser.get(page + 'posts/')
-                    time.sleep(2)
-
-                print("One sec, I need to scroll to the next post")
-                browser.execute_script("window.scrollTo(0, {});".format(page_scroll_length))
-                page_scroll_length+=500
-                scroll_attempts+=1
-                time.sleep(1)
-
-            else:
-                print("All engagers have been scraped or block has been recieved. We have kept track of where we left off.")
+            print("One sec..I need to scroll to the next post.")
+            browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)
+            
+            # Calculate new scroll height and compare with last scroll height
+            new_height = browser.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                print("All posts have been scraped")
                 break
-                    
+            else:
+                last_height = new_height
+        
+    export_df()
 
 
-# In[3186]:
+# In[124]:
 
 
 #Calling the Master function
 get_next_post()
 
 
-# In[ ]:
+# In[125]:
 
 
-
+user_index
 
 
 # In[ ]:
