@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[106]:
+# In[153]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -27,10 +27,10 @@ from openpyxl import load_workbook
 get_ipython().run_line_magic('matplotlib', 'inline')
 caffeine.on(display=True)
 
-
+creds_file_name = "credentials_gw.txt"
 #Check for username/password txt file
 try:
-    f= open("credentials.txt","r")
+    f= open(creds_file_name,"r")
     contents = f.read()
     username = contents.replace("=",",").split(",")[1]
     password = contents.replace("=",",").split(",")[3]
@@ -39,7 +39,7 @@ try:
     post_index = int(contents.replace("=",",").split(",")[7])
     user_index = int(contents.replace("=",",").split(",")[9])
 except:
-    f= open("credentials.txt","w+")
+    f= open(creds_file_name,"w+")
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
     page = input("What is url of the page you want to scrape? ")
@@ -50,7 +50,7 @@ except:
     f.close()
 
 
-# In[107]:
+# In[154]:
 
 
 try:
@@ -75,7 +75,7 @@ except:
     pass
 
 
-# In[108]:
+# In[155]:
 
 
 #accessing Chromedriver
@@ -93,7 +93,7 @@ elementID.send_keys(password)
 elementID.submit()
 
 
-# In[109]:
+# In[156]:
 
 
 #Scrolls the main page
@@ -118,7 +118,7 @@ def scroll():
         last_height = new_height
 
 
-# In[110]:
+# In[157]:
 
 
 #Scrolls popups
@@ -147,7 +147,7 @@ def scroll_popup(class_name):
         
 
 
-# In[111]:
+# In[158]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -225,7 +225,7 @@ def est_age():
         
 
 
-# In[112]:
+# In[159]:
 
 
 #Function that Scrapes user data
@@ -369,7 +369,7 @@ def get_user_data():
         
 
 
-# In[113]:
+# In[160]:
 
 
 def word_counter(words):
@@ -395,7 +395,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[114]:
+# In[161]:
 
 
 def get_df(wc):
@@ -421,7 +421,7 @@ def get_df(wc):
     return df
 
 
-# In[115]:
+# In[162]:
 
 
 def clean_list(interest):
@@ -432,7 +432,7 @@ def clean_list(interest):
     return clean_list
 
 
-# In[116]:
+# In[163]:
 
 
 def clean_interests(interest):
@@ -443,7 +443,7 @@ def clean_interests(interest):
     return clean_list
 
 
-# In[117]:
+# In[164]:
 
 
 def count_interests():
@@ -466,7 +466,7 @@ def count_interests():
     return common_companies, common_influencers, common_genders, common_locations
 
 
-# In[118]:
+# In[165]:
 
 
 def plot_interests(df1,df2,df3,df4):
@@ -492,7 +492,7 @@ def plot_interests(df1,df2,df3,df4):
     
 
 
-# In[119]:
+# In[166]:
 
 
 def export_df():
@@ -583,12 +583,12 @@ def export_df():
     wb.save("{}_linkedin.xlsx".format(company_name))
     
     #Keep Track of where we are in the foller list
-    f= open("credentials.txt","w+")
+    f= open(creds_file_name,"w+")
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
 
 
-# In[120]:
+# In[167]:
 
 
 def current_time():
@@ -603,7 +603,7 @@ daily_limit = 200
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[121]:
+# In[168]:
 
 
 #Scraping the list of likers from the post
@@ -617,7 +617,7 @@ def scrape_post_likers():
     skip_count = 0
     
     #Liker link number we will iterate to the path
-    global user_idex
+    global user_index
     
     #Get Length of Entire Liker List
     class_name = 'artdeco-modal__content social-details-reactors-modal__content ember-view'
@@ -673,6 +673,7 @@ def scrape_post_likers():
             
         except:
             post_index+=1
+            print("Let's export")
             export_df()
             user_index = 1
             time.sleep(2)
@@ -712,7 +713,7 @@ def scrape_post_likers():
             time.sleep(1)
 
 
-# In[122]:
+# In[169]:
 
 
 #Advanced scrolling
@@ -725,7 +726,6 @@ def get_next_post():
     time.sleep(2)
     
     last_height = browser.execute_script("return document.body.scrollHeight")
-    print(last_height)
     
     while True:
     
@@ -754,17 +754,11 @@ def get_next_post():
     export_df()
 
 
-# In[124]:
+# In[170]:
 
 
 #Calling the Master function
 get_next_post()
-
-
-# In[125]:
-
-
-user_index
 
 
 # In[ ]:
