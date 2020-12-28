@@ -31,14 +31,14 @@ page = input("Enter the Company Linkedin URL: ")
 company_name = page[33:-1]
 
 try:
-    f= open("{}_audience_data".format(company_name),"r")
+    f= open("{}_credentials.txt".format(company_name),"r")
     contents = f.read()
     username = contents.replace("=",",").split(",")[1]
     password = contents.replace("=",",").split(",")[3]
     post_index = int(contents.replace("=",",").split(",")[7])
     user_index = int(contents.replace("=",",").split(",")[9])
 except:
-    f= open("{}_audience_data".format(company_name),"w+")
+    f= open("{}_credentials.txt".format(company_name),"w+")
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
     post_index = 1
