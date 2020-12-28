@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[153]:
+# In[191]:
 
 
 #required installs (i.e. pip3 install in terminal): pandas, selenium, bs4, and possibly chromedriver(it may come with selenium)
@@ -27,30 +27,27 @@ from openpyxl import load_workbook
 get_ipython().run_line_magic('matplotlib', 'inline')
 caffeine.on(display=True)
 
-creds_file_name = "credentials_gw.txt"
-#Check for username/password txt file
+page = input("Enter the Company Linkedin URL: ")
+company_name = page[33:-1]
+
 try:
-    f= open(creds_file_name,"r")
+    f= open("{}_audience_data".format(company_name),"r")
     contents = f.read()
     username = contents.replace("=",",").split(",")[1]
     password = contents.replace("=",",").split(",")[3]
-    page = contents.replace("=",",").split(",")[5]
-    company_name = page[33:-1]
     post_index = int(contents.replace("=",",").split(",")[7])
     user_index = int(contents.replace("=",",").split(",")[9])
 except:
-    f= open(creds_file_name,"w+")
+    f= open("{}_audience_data".format(company_name),"w+")
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
-    page = input("What is url of the page you want to scrape? ")
-    company_name = page[33:-1]
     post_index = 1
     user_index = 1
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
 
 
-# In[154]:
+# In[1]:
 
 
 try:
@@ -75,7 +72,7 @@ except:
     pass
 
 
-# In[155]:
+# In[190]:
 
 
 #accessing Chromedriver
@@ -93,7 +90,7 @@ elementID.send_keys(password)
 elementID.submit()
 
 
-# In[156]:
+# In[175]:
 
 
 #Scrolls the main page
@@ -118,7 +115,7 @@ def scroll():
         last_height = new_height
 
 
-# In[157]:
+# In[176]:
 
 
 #Scrolls popups
@@ -147,7 +144,7 @@ def scroll_popup(class_name):
         
 
 
-# In[158]:
+# In[177]:
 
 
 #Function that estimates user age based on earliest school date or earlier work date
@@ -225,7 +222,7 @@ def est_age():
         
 
 
-# In[159]:
+# In[178]:
 
 
 #Function that Scrapes user data
@@ -369,7 +366,7 @@ def get_user_data():
         
 
 
-# In[160]:
+# In[179]:
 
 
 def word_counter(words):
@@ -395,7 +392,7 @@ def word_counter(words):
     return wordcount
 
 
-# In[161]:
+# In[180]:
 
 
 def get_df(wc):
@@ -421,7 +418,7 @@ def get_df(wc):
     return df
 
 
-# In[162]:
+# In[181]:
 
 
 def clean_list(interest):
@@ -432,7 +429,7 @@ def clean_list(interest):
     return clean_list
 
 
-# In[163]:
+# In[182]:
 
 
 def clean_interests(interest):
@@ -443,7 +440,7 @@ def clean_interests(interest):
     return clean_list
 
 
-# In[164]:
+# In[183]:
 
 
 def count_interests():
@@ -466,7 +463,7 @@ def count_interests():
     return common_companies, common_influencers, common_genders, common_locations
 
 
-# In[165]:
+# In[184]:
 
 
 def plot_interests(df1,df2,df3,df4):
@@ -490,9 +487,10 @@ def plot_interests(df1,df2,df3,df4):
     location_plot.set_ylabel('Locations')
     location_plot.figure.savefig("l_plot.png", dpi = 100, bbox_inches = "tight")
     
+    plt.close('all')
 
 
-# In[166]:
+# In[185]:
 
 
 def export_df():
@@ -583,12 +581,12 @@ def export_df():
     wb.save("{}_linkedin.xlsx".format(company_name))
     
     #Keep Track of where we are in the foller list
-    f= open(creds_file_name,"w+")
+    f= open("{}_credentials.txt".format(company_name),"w+")
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
 
 
-# In[167]:
+# In[186]:
 
 
 def current_time():
@@ -603,7 +601,7 @@ daily_limit = 200
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
 
 
-# In[168]:
+# In[187]:
 
 
 #Scraping the list of likers from the post
@@ -650,7 +648,7 @@ def scrape_post_likers():
                 path = "//div[@class='{}']".format(class_name)
                 browser.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", browser.find_element_by_xpath(path))
 
-                time.sleep(2)
+                time.sleep(4)
                 
                 # Calculate new scroll height and compare with last scroll height
                 new_height = browser.execute_script(js_code)
@@ -672,12 +670,20 @@ def scrape_post_likers():
             browser.switch_to.window(browser.window_handles[0])
             
         except:
-            post_index+=1
-            print("Let's export")
-            export_df()
-            user_index = 1
-            time.sleep(2)
-            break
+            try:
+                browser.switch_to.window(browser.window_handles[1])
+                browser.close()
+                time.sleep(2)
+                browser.switch_to.window(browser.window_handles[0])
+            except:
+                browser.switch_to.window(browser.window_handles[0])
+                time.sleep(2)
+                print("Let's export")
+                export_df()
+                post_index+=1
+                user_index = 1
+                time.sleep(2)
+                break
 
                 
                 
@@ -713,7 +719,7 @@ def scrape_post_likers():
             time.sleep(1)
 
 
-# In[169]:
+# In[188]:
 
 
 #Advanced scrolling
@@ -750,11 +756,9 @@ def get_next_post():
                 break
             else:
                 last_height = new_height
-        
-    export_df()
 
 
-# In[170]:
+# In[189]:
 
 
 #Calling the Master function
