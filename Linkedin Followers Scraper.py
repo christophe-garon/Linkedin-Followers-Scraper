@@ -50,6 +50,7 @@ except:
 # In[1]:
 
 
+#Get any existing scraped data
 try:
     scraped = pd.read_csv("{}_linkedin_backup.csv".format(company_name))
     liker_names = list(scraped["Id"])
@@ -70,6 +71,17 @@ except:
     influencers = []
     companies = []
     pass
+
+#Get the Meta Data
+try:
+    linkedin_pages = pd.read_csv("meta_data.csv")
+    interest_pages = linkedin_pages["Interest Pages"].to_list()
+    follower_counts = linkedin_pages["Follower Counts"].to_list()
+    follow_rate = linkedin_pages["Follow Rate"].to_list()
+except:
+    interest_pages = []
+    follower_counts = []
+    follow_rate = []
 
 
 # In[190]:
@@ -322,7 +334,14 @@ def get_user_data():
             user_influencers = ""
             for i in influencer_list:
                 name = i.find("span",{"class":"pv-entity__summary-title-text"})
-                user_influencers += name.text.strip() + "^ "
+                name = name.text.strip()
+                user_influencers += name + "^ "
+
+                if name not in interest_pages:
+                    interest_pages.append(name)
+                    follower_count = i.find('p', {"class":"pv-entity__follower-count"}).text.strip()
+                    follower_count = follower_count.split(' ')
+                    follower_counts.append(follower_count[0])
 
             influencers.append(user_influencers)
 
@@ -353,9 +372,18 @@ def get_user_data():
             user_companies = ""
             for i in company_list:
                 name = i.find("span",{"class":"pv-entity__summary-title-text"})
-                user_companies += name.text.strip() + "^ "
+                name = name.text.strip()
+                user_companies += name + "^ "
+
+                if name not in interest_pages:
+                    interest_pages.append(name)
+                    follower_count = i.find('p', {"class":"pv-entity__follower-count"}).text.strip()
+                    follower_count = follower_count.split(' ')
+                    follower_counts.append(follower_count[0])
+
 
             companies.append(user_companies)
+                
 
         except:
             companies.append("No Companies^ ")
@@ -584,6 +612,23 @@ def export_df():
     f= open("{}_credentials.txt".format(company_name),"w+")
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
+    
+    #Calc the follow rate for interest pages
+    total_linkedin_users = 260000000
+    for item in follower_counts:
+        follow_percent = float(item.replace(',',''))/total_linkedin_users * 100
+        follow_rate.append(round(follow_percent,4))
+        
+    #Export the Meta Data
+    meta_data = {
+    "Interest Pages": interest_pages,
+    "Follower Counts": follower_counts,
+    "Follow Rate": follow_rate
+    }
+
+    meta_df = pd.DataFrame(meta_data)
+
+    meta_df.to_csv("meta_data.csv", encoding='utf-8', index=False)
 
 
 # In[186]:
