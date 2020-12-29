@@ -50,6 +50,7 @@ except:
 # In[1]:
 
 
+#Get any existing scraped data
 try:
     scraped = pd.read_csv("{}_linkedin_backup.csv".format(company_name))
     liker_names = list(scraped["Id"])
@@ -70,6 +71,17 @@ except:
     influencers = []
     companies = []
     pass
+
+#Get the Meta Data
+try:
+    linkedin_pages = pd.read_csv("meta_data.csv")
+    interest_pages = list(linkedin_pages["Interest Pages"])
+    follower_counts = list(linkedin_pages["Follower Counts"])
+    follow_rate = list(linkedin_pages["Follow Rate"])
+except:
+    interest_pages = []
+    follower_counts = []
+    follow_rate = []
 
 
 # In[190]:
@@ -322,7 +334,20 @@ def get_user_data():
             user_influencers = ""
             for i in influencer_list:
                 name = i.find("span",{"class":"pv-entity__summary-title-text"})
-                user_influencers += name.text.strip() + "^ "
+                name = name.text.strip()
+                user_influencers += name + "^ "
+
+                if name not in interest_pages:
+                    interest_pages.append(name)
+                    follower_count = i.find('p', {"class":"pv-entity__follower-count"}).text.strip()
+                    follower_count = follower_count.split(' ')
+                    follower_count = follower_count[0]
+                    follower_counts.append(follower_count)
+                    
+                    #Calc the follower rate
+                    total_linkedin_users = 260000000
+                    follow_percent = float(follower_count.replace(',',''))/total_linkedin_users * 100
+                    follow_rate.append(round(follow_percent,4))
 
             influencers.append(user_influencers)
 
@@ -353,9 +378,23 @@ def get_user_data():
             user_companies = ""
             for i in company_list:
                 name = i.find("span",{"class":"pv-entity__summary-title-text"})
-                user_companies += name.text.strip() + "^ "
+                name = name.text.strip()
+                user_companies += name + "^ "
+
+                if name not in interest_pages:
+                    interest_pages.append(name)
+                    follower_count = i.find('p', {"class":"pv-entity__follower-count"}).text.strip()
+                    follower_count = follower_count.split(' ')
+                    follower_count = follower_count[0]
+                    follower_counts.append(follower_count)
+                    
+                    #Calc the follower rate
+                    total_linkedin_users = 260000000
+                    follow_percent = float(follower_count.replace(',',''))/total_linkedin_users * 100
+                    follow_rate.append(round(follow_percent,4))
 
             companies.append(user_companies)
+                
 
         except:
             companies.append("No Companies^ ")
@@ -538,7 +577,7 @@ def export_df():
     
 
     #Exporting csv to program folder for backup
-    backup_df.to_csv("{}_linkedin_backup.csv".format(company_name), encoding='utf-8', index=False)
+    backup_df.to_csv("{}_linkedin_backup.csv".format(company_name), encoding='utf-8', index=True)
     
     #Get data frames of interest counts
     common_companies, common_influencers, common_genders, common_locations = count_interests()
@@ -584,6 +623,17 @@ def export_df():
     f= open("{}_credentials.txt".format(company_name),"w+")
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
+        
+    #Export the Meta Data
+    meta_data = {
+    "Interest Pages": interest_pages,
+    "Follower Counts": follower_counts,
+    "Follow Rate": follow_rate
+    }
+
+    meta_df = pd.DataFrame(meta_data)
+
+    meta_df.to_csv("meta_data.csv", encoding='utf-8', index=True)
 
 
 # In[186]:
