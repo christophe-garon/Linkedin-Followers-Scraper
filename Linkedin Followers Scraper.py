@@ -341,7 +341,6 @@ def get_user_data():
                     interest_pages.append(name)
                     follower_count = i.find('p', {"class":"pv-entity__follower-count"}).text.strip()
                     follower_count = follower_count.split(' ')
-<<<<<<< HEAD
                     follower_count = follower_count[0]
                     follower_counts.append(follower_count)
                     
@@ -349,9 +348,6 @@ def get_user_data():
                     total_linkedin_users = 260000000
                     follow_percent = float(follower_count.replace(',',''))/total_linkedin_users * 100
                     follow_rate.append(round(follow_percent,4))
-=======
-                    follower_counts.append(follower_count[0])
->>>>>>> 6c29a0720449c1c17fbba648aede0f871185928c
 
             influencers.append(user_influencers)
 
@@ -389,7 +385,6 @@ def get_user_data():
                     interest_pages.append(name)
                     follower_count = i.find('p', {"class":"pv-entity__follower-count"}).text.strip()
                     follower_count = follower_count.split(' ')
-<<<<<<< HEAD
                     follower_count = follower_count[0]
                     follower_counts.append(follower_count)
                     
@@ -397,10 +392,6 @@ def get_user_data():
                     total_linkedin_users = 260000000
                     follow_percent = float(follower_count.replace(',',''))/total_linkedin_users * 100
                     follow_rate.append(round(follow_percent,4))
-=======
-                    follower_counts.append(follower_count[0])
-
->>>>>>> 6c29a0720449c1c17fbba648aede0f871185928c
 
             companies.append(user_companies)
                 
@@ -632,15 +623,6 @@ def export_df():
     f= open("{}_credentials.txt".format(company_name),"w+")
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
-<<<<<<< HEAD
-=======
-    
-    #Calc the follow rate for interest pages
-    total_linkedin_users = 260000000
-    for item in follower_counts:
-        follow_percent = float(item.replace(',',''))/total_linkedin_users * 100
-        follow_rate.append(round(follow_percent,4))
->>>>>>> 6c29a0720449c1c17fbba648aede0f871185928c
         
     #Export the Meta Data
     meta_data = {
@@ -651,11 +633,7 @@ def export_df():
 
     meta_df = pd.DataFrame(meta_data)
 
-<<<<<<< HEAD
     meta_df.to_csv("meta_data.csv", encoding='utf-8', index=True)
-=======
-    meta_df.to_csv("meta_data.csv", encoding='utf-8', index=False)
->>>>>>> 6c29a0720449c1c17fbba648aede0f871185928c
 
 
 # In[186]:
