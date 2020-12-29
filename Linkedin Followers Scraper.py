@@ -75,15 +75,9 @@ except:
 #Get the Meta Data
 try:
     linkedin_pages = pd.read_csv("meta_data.csv")
-<<<<<<< HEAD
     interest_pages = list(linkedin_pages["Interest Pages"])
     follower_counts = list(linkedin_pages["Follower Counts"])
     follow_rate = list(linkedin_pages["Follow Rate"])
-=======
-    interest_pages = linkedin_pages["Interest Pages"].to_list()
-    follower_counts = linkedin_pages["Follower Counts"].to_list()
-    follow_rate = linkedin_pages["Follow Rate"].to_list()
->>>>>>> 6c29a0720449c1c17fbba648aede0f871185928c
 except:
     interest_pages = []
     follower_counts = []
