@@ -422,7 +422,9 @@ def word_counter(words):
         word = word.replace("mostly_male","male")
         word = word.replace("mostly_female","female")
         
-        if word != "No Influencers" and word != "No Companies" and word != "unknown" and word != "":
+        exclude_words = ["No Influencers", "No Companies", "unknown", "andy", ""]
+        
+        if word not in exclude_words:
             if word not in wordcount:
                 wordcount[word] = 1
             else:
@@ -440,7 +442,7 @@ def get_df(wc):
     
     total_scraped = len(user_gender)
     
-    trimmed_count = collections.Counter(wc).most_common(200)
+    trimmed_count = collections.Counter(wc).most_common(300)
 
     words = []
     count = []
@@ -669,7 +671,7 @@ def current_time():
 
 #Keeping track of number of page visits per day to stay under the limit
 daily_count = 0
-daily_limit = 200
+daily_limit = random.randint(200,250)
 
 #The path of the block that we need to select to scroll
 block_path = "//div[@class='artdeco-modal__content social-details-reactors-modal__content ember-view']"
