@@ -1,0 +1,8 @@
+*_credentials.txt
+.ipynb_checkpoints
+.DS_Store
+*.png
+*.xlsx
+venv/
+*.ipynb
+*linkedin_backup.csv
