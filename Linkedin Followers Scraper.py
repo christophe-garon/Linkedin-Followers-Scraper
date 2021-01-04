@@ -12,6 +12,7 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup as bs
 import time
+import os
 from datetime import datetime
 import pandas as pd
 import re
@@ -31,14 +32,22 @@ page = input("Enter the Company Linkedin URL: ")
 company_name = page[33:-1]
 
 try:
-    f= open("{}_credentials.txt".format(company_name),"r")
+    f= open("{}/{}_credentials.txt".format(company_name,company_name),"r")
     contents = f.read()
     username = contents.replace("=",",").split(",")[1]
     password = contents.replace("=",",").split(",")[3]
     post_index = int(contents.replace("=",",").split(",")[7])
     user_index = int(contents.replace("=",",").split(",")[9])
 except:
-    f= open("{}_credentials.txt".format(company_name),"w+")
+     if os.path.isdir(company_name) == False:
+        try:
+            os.mkdir(company_name)
+        except OSError:
+            print ("Creation of the directory %s failed" % path)
+        else:
+            print ("Successfully created the directory %s " % path)
+            
+    f= open("{}/{}_credentials.txt".format(company_name,company_name),"w+")
     username = input('Enter your linkedin username: ')
     password = input('Enter your linkedin password: ')
     post_index = 1
@@ -52,7 +61,7 @@ except:
 
 #Get any existing scraped data
 try:
-    scraped = pd.read_csv("{}_linkedin_backup.csv".format(company_name))
+    scraped = pd.read_csv("{}/{}_linkedin_backup.csv".format(company_name,company_name))
     liker_names = list(scraped["Id"])
     user_gender = list(scraped["Gender"])
     liker_locations = list(scraped["Location"])
@@ -227,7 +236,7 @@ def est_age():
         est_birth_year = int(work_start_year) - 22
         est_age = int(current_year) - est_birth_year
 
-    if est_age == -7961 or est_age == -7957:
+    if est_age <= 0:
         est_age = 'unknown'
     
     return est_age
@@ -535,22 +544,22 @@ def plot_interests(df1,df2,df3,df4):
     company_plot = df1[0:24].plot.barh(x='Word',y='Percentage')
     company_plot.invert_yaxis()
     company_plot.set_ylabel('Companies')
-    company_plot.figure.savefig("c_plot.png", dpi = 100, bbox_inches = "tight")
+    company_plot.figure.savefig("{}/c_plot.png".format(company_name), dpi = 100, bbox_inches = "tight")
 
     influencer_plot = df2[0:24].plot.barh(x='Word',y='Percentage')
     influencer_plot.invert_yaxis()
     influencer_plot.set_ylabel('Influencers')
-    influencer_plot.figure.savefig("i_plot.png", dpi = 100, bbox_inches = "tight")
+    influencer_plot.figure.savefig("{}/i_plot.png".format(company_name), dpi = 100, bbox_inches = "tight")
     
     gender_plot = df3[0:24].plot.barh(x='Word',y='Percentage')
     gender_plot.invert_yaxis()
     gender_plot.set_ylabel('Gender')
-    gender_plot.figure.savefig("g_plot.png", dpi = 100, bbox_inches = "tight")
+    gender_plot.figure.savefig("{}/g_plot.png".format(company_name), dpi = 100, bbox_inches = "tight")
 
     location_plot = df4[0:24].plot.barh(x='Word',y='Percentage')
     location_plot.invert_yaxis()
     location_plot.set_ylabel('Locations')
-    location_plot.figure.savefig("l_plot.png", dpi = 100, bbox_inches = "tight")
+    location_plot.figure.savefig("{}/l_plot.png".format(company_name), dpi = 100, bbox_inches = "tight")
     
     plt.close('all')
 
@@ -603,7 +612,7 @@ def export_df():
     
 
     #Exporting csv to program folder for backup
-    backup_df.to_csv("{}_linkedin_backup.csv".format(company_name), encoding='utf-8', index=True)
+    backup_df.to_csv("{}/{}_linkedin_backup.csv".format(company_name,company_name), encoding='utf-8', index=True)
     
     #Get data frames of interest counts
     common_companies, common_influencers, common_genders, common_locations = count_interests()
@@ -614,39 +623,39 @@ def export_df():
     time.sleep(1)
     
     #Create/Update Excel file
-    writer = pd.ExcelWriter("{}_linkedin.xlsx".format(company_name), engine='xlsxwriter')
+    writer = pd.ExcelWriter("{}/{}_linkedin.xlsx".format(company_name,company_name), engine='xlsxwriter')
     df.to_excel(writer, sheet_name='Page Egagers', index=False)
     common_companies.to_excel(writer, sheet_name='Company Interest', index=False)
     common_influencers.to_excel(writer, sheet_name='Influencer Interest', index=False)
     age_stats.to_excel(writer, sheet_name='Demographic Stats', index=True)
     writer.save()
     
-    wb = load_workbook("{}_linkedin.xlsx".format(company_name))
+    wb = load_workbook("{}/{}_linkedin.xlsx".format(company_name,company_name))
 
     #Adding plots to the sheets
     cws = wb["Company Interest"]
-    c_img = openpyxl.drawing.image.Image('c_plot.png')
+    c_img = openpyxl.drawing.image.Image('{}/c_plot.png'.format(company_name))
     c_img.anchor = 'H5'
     cws.add_image(c_img)
 
     iws = wb["Influencer Interest"]
-    i_img = openpyxl.drawing.image.Image('i_plot.png')
+    i_img = openpyxl.drawing.image.Image('{}/i_plot.png'.format(company_name))
     i_img.anchor = 'H5'
     iws.add_image(i_img)
     
     dws = wb["Demographic Stats"]
-    g_img = openpyxl.drawing.image.Image('g_plot.png')
+    g_img = openpyxl.drawing.image.Image('{}/g_plot.png'.format(company_name))
     g_img.anchor = 'D2'
     dws.add_image(g_img)
-    l_img = openpyxl.drawing.image.Image('l_plot.png')
+    l_img = openpyxl.drawing.image.Image('{}/l_plot.png'.format(company_name))
     l_img.anchor = 'B21'
     dws.add_image(l_img)
 
     #Save Excel file
-    wb.save("{}_linkedin.xlsx".format(company_name))
+    wb.save("{}/{}_linkedin.xlsx".format(company_name,company_name))
     
     #Keep Track of where we are in the foller list
-    f= open("{}_credentials.txt".format(company_name),"w+")
+    f= open("{}/{}_credentials.txt".format(company_name,company_name),"w+")
     f.write("username={}, password={}, page={}, post_index={}, user_index={}".format(username,password,page,post_index,user_index))
     f.close()
         
